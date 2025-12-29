@@ -3,8 +3,8 @@ import { ArrowUpRight, Users, CreditCard, Activity } from 'lucide-react';
 
 async function getStats() {
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/admin";
-    const res = await fetch(`${API_URL}/stats`, { cache: 'no-store' });
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const res = await fetch(`${API_URL}/api/admin/stats`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch stats');
     return res.json();
   } catch (error) {

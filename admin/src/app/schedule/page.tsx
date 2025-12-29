@@ -2,8 +2,8 @@ import { ChevronLeft, ChevronRight, Plus, Users, Clock } from 'lucide-react';
 
 async function getClasses() {
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/admin";
-    const res = await fetch(`${API_URL}/classes`, { cache: 'no-store' });
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const res = await fetch(`${API_URL}/api/admin/classes`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch classes');
     return res.json();
   } catch (error) {

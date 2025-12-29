@@ -2,8 +2,8 @@ import { Wrench, CheckCircle, AlertTriangle, Plus } from 'lucide-react';
 
 async function getEquipment() {
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/admin";
-    const res = await fetch(`${API_URL}/equipment`, { cache: 'no-store' });
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const res = await fetch(`${API_URL}/api/admin/equipment`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch equipment');
     return res.json();
   } catch (error) {

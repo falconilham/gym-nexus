@@ -18,8 +18,8 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
 
   const fetchMembers = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/admin";
-    fetch(`${API_URL}/members`)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    fetch(`${API_URL}/api/admin/members`)
       .then(res => res.json())
       .then(data => setMembers(data))
       .catch(err => console.error('Failed to fetch members', err));

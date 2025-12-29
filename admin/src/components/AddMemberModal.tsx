@@ -20,8 +20,8 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess }: AddMember
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/admin";
-        const res = await fetch(`${API_URL}/members`, {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const res = await fetch(`${API_URL}/api/admin/members`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
