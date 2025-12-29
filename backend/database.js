@@ -1,29 +1,43 @@
-const { Sequelize, DataTypes } = require("sequelize");
+const { Sequelize, DataTypes } = require('sequelize');
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME || "gymnexus",
-  process.env.DB_USER || "postgres",
-  process.env.DB_PASS || "password",
-  {
-    host: process.env.DB_HOST || "localhost",
-    dialect: "postgres",
-    logging: false,
-  }
+// Use DATABASE_URL if available (Railway), otherwise use individual env vars (local dev)
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      logging: false,
+      dialectOptions: {
+        ssl: false, // Railway uses internal networking, no SSL needed
+      },
+    })
+  : new Sequelize(
+      process.env.DB_NAME || 'gymnexus',
+      process.env.DB_USER || 'postgres',
+      process.env.DB_PASS || 'password',
+      {
+        host: process.env.DB_HOST || 'localhost',
+        dialect: 'postgres',
+        logging: false,
+      }
+    );
+
+console.log(
+  process.env.DATABASE_URL
+    ? 'Using DATABASE_URL (Railway PostgreSQL)'
+    : 'Using individual DB env vars (local development)'
 );
-console.log("Using PostgreSQL Database");
 
 // --- MODELS ---
 
-const Member = sequelize.define("Member", {
+const Member = sequelize.define('Member', {
   name: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   password: { type: DataTypes.STRING, allowNull: false },
-  plan: { type: DataTypes.STRING, defaultValue: "Standard" },
-  status: { type: DataTypes.STRING, defaultValue: "Active" },
+  plan: { type: DataTypes.STRING, defaultValue: 'Standard' },
+  status: { type: DataTypes.STRING, defaultValue: 'Active' },
   joinDate: { type: DataTypes.STRING }, // Keeping as string for simplicity with mock data
 });
 
-const Trainer = sequelize.define("Trainer", {
+const Trainer = sequelize.define('Trainer', {
   name: { type: DataTypes.STRING, allowNull: false },
   specialty: { type: DataTypes.STRING },
   rating: { type: DataTypes.FLOAT },
@@ -33,7 +47,7 @@ const Trainer = sequelize.define("Trainer", {
   image: { type: DataTypes.STRING },
 });
 
-const Class = sequelize.define("Class", {
+const Class = sequelize.define('Class', {
   title: { type: DataTypes.STRING, allowNull: false },
   trainer: { type: DataTypes.STRING }, // Storing name for simplicity, or could relation
   time: { type: DataTypes.STRING },
@@ -43,7 +57,7 @@ const Class = sequelize.define("Class", {
   color: { type: DataTypes.STRING },
 });
 
-const Equipment = sequelize.define("Equipment", {
+const Equipment = sequelize.define('Equipment', {
   name: { type: DataTypes.STRING, allowNull: false },
   category: { type: DataTypes.STRING },
   status: { type: DataTypes.STRING },
@@ -51,7 +65,7 @@ const Equipment = sequelize.define("Equipment", {
   nextService: { type: DataTypes.STRING },
 });
 
-const Booking = sequelize.define("Booking", {
+const Booking = sequelize.define('Booking', {
   type: { type: DataTypes.STRING }, // 'class' or 'trainer'
   itemId: { type: DataTypes.STRING }, // ID of class or trainer
   memberId: { type: DataTypes.INTEGER },
@@ -63,9 +77,9 @@ const Booking = sequelize.define("Booking", {
 const seedDatabase = async () => {
   try {
     await sequelize.sync(); // Create tables if not exist
-    console.log("Database synced. Ready for real data.");
+    console.log('Database synced. Ready for real data.');
   } catch (error) {
-    console.error("Database sync failed:", error);
+    console.error('Database sync failed:', error);
   }
 };
 
