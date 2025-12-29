@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  /* Dark Mode Energy Palette */
+  --background: #0F0F0F;
+  /* Deep Matte Black from mobile */
+  --surface: #1E1E1E;
+  /* Dark Card */
+  --foreground: #FFFFFF;
+  /* Text */
+  --primary: #CCFF00;
+  /* Electric Lime */
+  --secondary: #00E5FF;
+  /* Cyber Blue */
+  --border: #333333;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes scan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+  box-shadow: 0 0 10px var(--primary);
+  width: 100%;
+}
