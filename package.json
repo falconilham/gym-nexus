@@ -1,5 +1,5 @@
 {
-  "name": "gym-nexus-monorepo",
+  "name": "gym-nexus",
   "version": "1.0.0",
   "private": true,
   "description": "GymNexus monorepo containing mobile app, admin panel, and backend",

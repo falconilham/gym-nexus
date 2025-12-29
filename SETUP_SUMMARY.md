@@ -7,7 +7,7 @@ Your GymNexus project has been successfully converted to a **monorepo** using **
 ### Structure Created
 
 ```
-gym-nexus-mobile/
+gym-nexus/
 ├── 📱 client/              # @gym-nexus/client - React Native mobile app (Expo)
 ├── ⚙️ admin/               # @gym-nexus/admin - Next.js admin panel
 ├── 🔌 backend/             # @gym-nexus/backend - Express.js API server
@@ -45,7 +45,7 @@ gym-nexus-mobile/
    - Can be imported in any workspace
 
 4. **Scoped Package Names**
-   - `@gym-nexus/client` (formerly `gym-nexus-mobile`)
+   - `@gym-nexus/client` (React Native mobile app)
    - `@gym-nexus/admin` (formerly `admin-web`)
    - `@gym-nexus/backend` (formerly `backend`)
    - `@gym-nexus/shared` (new)

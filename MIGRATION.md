@@ -24,7 +24,7 @@
 ### 📝 Modified Files
 
 1. **client/package.json**
-   - Changed name: `gym-nexus-mobile` → `@gym-nexus/client`
+   - Changed name: `gym-nexus-mobile` → `@gym-nexus/client` (scoped package)
    - Added `clean` script
 
 2. **admin/package.json**
@@ -99,7 +99,7 @@ npm run dev:backend
 
 If you have any imports or references to package names:
 
-- `gym-nexus-mobile` → `@gym-nexus/client`
+- `gym-nexus-mobile` → `@gym-nexus/client` (scoped package)
 - `admin-web` → `@gym-nexus/admin`
 - `backend` → `@gym-nexus/backend`
 

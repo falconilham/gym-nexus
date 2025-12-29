@@ -3,7 +3,7 @@
 ## Project Structure
 
 ```
-gym-nexus-mobile/
+gym-nexus/
 ├── client/              # @gym-nexus/client - React Native mobile app
 ├── admin/               # @gym-nexus/admin - Next.js admin panel
 ├── backend/             # @gym-nexus/backend - Express API

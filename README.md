@@ -5,7 +5,7 @@ A monorepo containing the GymNexus mobile app, admin panel, and backend API.
 ## Project Structure
 
 ```
-gym-nexus-mobile/
+gym-nexus/
 ├── client/          # React Native mobile app (Expo)
 ├── admin/           # Next.js admin web panel
 ├── backend/         # Express.js API server
@@ -98,16 +98,19 @@ npm run clean
 ## Workspaces
 
 ### Client (Mobile App)
+
 - **Location:** `./client`
 - **Tech:** React Native + Expo
 - **Dev:** `npm run dev:client`
 
 ### Admin (Web Panel)
+
 - **Location:** `./admin`
 - **Tech:** Next.js + React
 - **Dev:** `npm run dev:admin`
 
 ### Backend (API)
+
 - **Location:** `./backend`
 - **Tech:** Express.js + Sequelize + PostgreSQL
 - **Dev:** `npm run dev:backend`
