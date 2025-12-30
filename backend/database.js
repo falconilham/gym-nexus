@@ -32,9 +32,11 @@ const Member = sequelize.define('Member', {
   name: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   password: { type: DataTypes.STRING, allowNull: false },
-  plan: { type: DataTypes.STRING, defaultValue: 'Standard' },
   status: { type: DataTypes.STRING, defaultValue: 'Active' },
+  suspended: { type: DataTypes.BOOLEAN, defaultValue: false },
   joinDate: { type: DataTypes.STRING }, // Keeping as string for simplicity with mock data
+  endDate: { type: DataTypes.STRING },
+  duration: { type: DataTypes.STRING }, // e.g. "1 Month", "3 Months"
 });
 
 const Trainer = sequelize.define('Trainer', {
@@ -72,11 +74,20 @@ const Booking = sequelize.define('Booking', {
   date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 });
 
+const CheckIn = sequelize.define('CheckIn', {
+  memberId: { type: DataTypes.INTEGER, allowNull: false },
+  memberName: { type: DataTypes.STRING },
+  status: { type: DataTypes.STRING, allowNull: false }, // 'granted' or 'denied'
+  reason: { type: DataTypes.STRING }, // 'suspended', 'expired', 'not_found', null if granted
+  timestamp: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  checkOutTime: { type: DataTypes.DATE }, // Nullable, set on checkout
+});
+
 // --- SEEDING ---
 
 const seedDatabase = async () => {
   try {
-    await sequelize.sync(); // Create tables if not exist
+    await sequelize.sync({ alter: true }); // Create tables if not exist, alter if changed
     console.log('Database synced. Ready for real data.');
   } catch (error) {
     console.error('Database sync failed:', error);
@@ -90,5 +101,6 @@ module.exports = {
   Class,
   Equipment,
   Booking,
+  CheckIn,
   seedDatabase,
 };

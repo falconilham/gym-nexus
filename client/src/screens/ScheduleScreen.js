@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,45 +9,45 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS, SIZES } from "../constants/theme";
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SIZES } from '../constants/theme';
 
 const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/classes`;
 const BOOK_URL = `${process.env.EXPO_PUBLIC_API_URL}/book-class`;
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function ScheduleScreen({ onBack }) {
-  const [selectedDay, setSelectedDay] = useState("Wed"); // Mock 'Today'
+  const [selectedDay, setSelectedDay] = useState('Wed'); // Mock 'Today'
   const [classes, setClasses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch(API_URL)
-      .then((res) => res.json())
-      .then((data) => setClasses(data))
-      .catch((err) => console.error("Failed to fetch classes", err))
+      .then(res => res.json())
+      .then(data => setClasses(data))
+      .catch(err => console.error('Failed to fetch classes', err))
       .finally(() => setIsLoading(false));
   }, []);
 
   const handleBook = (classId, title) => {
-    Alert.alert("Book Class", `Confirm booking for ${title}?`, [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert('Book Class', `Confirm booking for ${title}?`, [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: "Confirm",
+        text: 'Confirm',
         onPress: () => {
           fetch(BOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ classId, memberId: 1 }),
           })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.success) Alert.alert("Success", data.message);
-              else Alert.alert("Error", "Booking failed.");
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) Alert.alert('Success', data.message);
+              else Alert.alert('Error', 'Booking failed.');
             })
-            .catch((err) => Alert.alert("Error", "Server error"));
+            .catch(err => Alert.alert('Error', 'Server error'));
         },
       },
     ]);
@@ -60,32 +60,19 @@ export default function ScheduleScreen({ onBack }) {
 
     return (
       <View style={styles.card}>
-        <View
-          style={[
-            styles.timeStrip,
-            { backgroundColor: item.color || COLORS.primary },
-          ]}
-        >
-          <Text style={styles.timeText}>{item.time.split(" ")[0]}</Text>
-          <Text style={styles.ampm}>{item.time.split(" ")[1]}</Text>
+        <View style={[styles.timeStrip, { backgroundColor: item.color || COLORS.primary }]}>
+          <Text style={styles.timeText}>{item.time.split(' ')[0]}</Text>
+          <Text style={styles.ampm}>{item.time.split(' ')[1]}</Text>
         </View>
         <View style={styles.cardContent}>
           <View>
             <Text style={styles.classTitle}>{item.title}</Text>
             <Text style={styles.trainerName}>{item.trainer}</Text>
             <View style={styles.metaRow}>
-              <Ionicons
-                name="time-outline"
-                size={14}
-                color={COLORS.textSecondary}
-              />
+              <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
               <Text style={styles.metaText}>{item.duration}</Text>
               <View style={{ width: 10 }} />
-              <Ionicons
-                name="people-outline"
-                size={14}
-                color={COLORS.textSecondary}
-              />
+              <Ionicons name="people-outline" size={14} color={COLORS.textSecondary} />
               <Text style={styles.metaText}>
                 {item.booked}/{item.capacity}
               </Text>
@@ -96,13 +83,8 @@ export default function ScheduleScreen({ onBack }) {
             disabled={isFull}
             onPress={() => handleBook(item.id, item.title)}
           >
-            <Text
-              style={[
-                styles.bookBtnText,
-                isFull && { color: COLORS.textSecondary },
-              ]}
-            >
-              {isFull ? "FULL" : "BOOK"}
+            <Text style={[styles.bookBtnText, isFull && { color: COLORS.textSecondary }]}>
+              {isFull ? 'FULL' : 'BOOK'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -132,32 +114,31 @@ export default function ScheduleScreen({ onBack }) {
               style={[styles.dayItem, isActive && styles.dayItemActive]}
               onPress={() => setSelectedDay(day)}
             >
-              <Text style={[styles.dayText, isActive && styles.dayTextActive]}>
-                {day}
-              </Text>
-              <Text
-                style={[styles.dateText, isActive && styles.dateTextActive]}
-              >
-                {15 + index}
-              </Text>
+              <Text style={[styles.dayText, isActive && styles.dayTextActive]}>{day}</Text>
+              <Text style={[styles.dateText, isActive && styles.dateTextActive]}>{15 + index}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
       {isLoading ? (
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : (
         <FlatList
           data={classes}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           renderItem={renderClassItem}
           contentContainerStyle={{ padding: SIZES.padding }}
-          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={{ alignItems: 'center', marginTop: 50 }}>
+              <Ionicons name="calendar-outline" size={64} color={COLORS.surface} />
+              <Text style={{ marginTop: 20, color: COLORS.textSecondary, fontSize: 16 }}>
+                No classes scheduled for this day.
+              </Text>
+            </View>
+          )}
         />
       )}
     </SafeAreaView>
@@ -170,17 +151,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: SIZES.padding,
     paddingVertical: 10,
   },
   backBtn: {
     width: 40,
     height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 20,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
@@ -189,16 +170,16 @@ const styles = StyleSheet.create({
   title: {
     color: COLORS.text,
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   calendarStrip: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingHorizontal: SIZES.padding,
     marginVertical: 20,
   },
   dayItem: {
-    alignItems: "center",
+    alignItems: 'center',
     padding: 10,
     borderRadius: 12,
     backgroundColor: COLORS.surface,
@@ -217,52 +198,52 @@ const styles = StyleSheet.create({
   },
   dayTextActive: {
     color: COLORS.background,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   dateText: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   dateTextActive: {
     color: COLORS.background,
   },
   card: {
-    flexDirection: "row",
+    flexDirection: 'row',
     backgroundColor: COLORS.surface,
     borderRadius: SIZES.radius,
     marginBottom: 16,
-    overflow: "hidden",
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   timeStrip: {
     width: 80,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 10,
   },
   timeText: {
-    color: "#000",
+    color: '#000',
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   ampm: {
-    color: "rgba(0,0,0,0.6)",
+    color: 'rgba(0,0,0,0.6)',
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   cardContent: {
     flex: 1,
     padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   classTitle: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   trainerName: {
@@ -271,8 +252,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   metaText: {
     color: COLORS.textSecondary,
@@ -290,7 +271,7 @@ const styles = StyleSheet.create({
   },
   bookBtnText: {
     color: COLORS.background,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     fontSize: 12,
   },
 });

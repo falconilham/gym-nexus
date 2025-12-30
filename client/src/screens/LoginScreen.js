@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,21 +11,21 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS, SIZES, ALIGN } from "../constants/theme";
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SIZES, ALIGN } from '../constants/theme';
 
 const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/login`;
 
-export default function LoginScreen({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function LoginScreen({ onLogin, onForgotPassword }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password.");
+      Alert.alert('Error', 'Please enter both email and password.');
       return;
     }
 
@@ -33,9 +33,9 @@ export default function LoginScreen({ onLogin }) {
 
     try {
       const response = await fetch(API_URL, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
@@ -46,32 +46,25 @@ export default function LoginScreen({ onLogin }) {
         // Success
         onLogin(data.user);
       } else {
-        Alert.alert("Login Failed", data.message || "Invalid credentials");
+        Alert.alert('Login Failed', data.message || 'Invalid credentials');
       }
     } catch (error) {
       console.error(error);
-      Alert.alert(
-        "Error",
-        "Could not connect to server. Ensure backend is running."
-      );
+      Alert.alert('Error', 'Could not connect to server. Ensure backend is running.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      "Reset Password",
-      "Please contact your gym administrator to reset your password.",
-      [{ text: "OK" }]
-    );
+    onForgotPassword();
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         {/* Header Section */}
@@ -122,14 +115,14 @@ export default function LoginScreen({ onLogin }) {
             />
           </View>
 
+          <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPass}>
+            <Text style={styles.forgotPassText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
           {/* Gradient Button */}
-          <TouchableOpacity
-            onPress={handleLogin}
-            activeOpacity={0.8}
-            disabled={isLoading}
-          >
+          <TouchableOpacity onPress={handleLogin} activeOpacity={0.8} disabled={isLoading}>
             <LinearGradient
-              colors={[COLORS.primary, "#96E6A1"]}
+              colors={[COLORS.primary, '#96E6A1']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.button}
@@ -139,11 +132,7 @@ export default function LoginScreen({ onLogin }) {
               ) : (
                 <>
                   <Text style={styles.buttonText}>SIGN IN</Text>
-                  <Ionicons
-                    name="arrow-forward"
-                    size={20}
-                    color={COLORS.background}
-                  />
+                  <Ionicons name="arrow-forward" size={20} color={COLORS.background} />
                 </>
               )}
             </LinearGradient>
@@ -168,32 +157,32 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
     paddingHorizontal: SIZES.padding,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   header: {
     marginBottom: 40,
-    alignItems: "center",
+    alignItems: 'center',
   },
   iconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
     backgroundColor: COLORS.surface,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   title: {
     fontSize: 40,
-    fontWeight: "800",
+    fontWeight: '800',
     color: COLORS.text,
     letterSpacing: 2,
   },
   titleAccent: {
     color: COLORS.primary,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   subtitle: {
     fontSize: SIZES.body,
@@ -202,11 +191,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   form: {
-    width: "100%",
+    width: '100%',
   },
   inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderRadius: SIZES.radius,
     paddingHorizontal: 16,
@@ -224,19 +213,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   forgotPass: {
-    alignSelf: "flex-end",
+    alignSelf: 'flex-end',
     marginBottom: 24,
   },
   forgotPassText: {
     color: COLORS.primary,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   button: {
-    flexDirection: "row",
+    flexDirection: 'row',
     height: 56,
     borderRadius: SIZES.radius,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -246,14 +235,14 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.background,
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginRight: 8,
     letterSpacing: 1,
   },
   biometricBtn: {
     marginTop: 32,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   biometricText: {
     color: COLORS.textSecondary,
@@ -262,7 +251,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     ...ALIGN.rowBetween,
-    justifyContent: "center",
+    justifyContent: 'center',
     marginTop: 40,
   },
   footerText: {
@@ -271,7 +260,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: COLORS.primary,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     fontSize: 14,
   },
 });

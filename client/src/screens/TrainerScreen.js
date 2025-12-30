@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,51 +10,47 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS, SIZES } from "../constants/theme";
-import TrainerCard from "../components/TrainerCard";
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SIZES } from '../constants/theme';
+import TrainerCard from '../components/TrainerCard';
 
 const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/trainers`;
 
-const CATEGORIES = ["All", "HIIT", "Strength", "Yoga", "Boxing"];
+const CATEGORIES = ['All', 'HIIT', 'Strength', 'Yoga', 'Boxing'];
 
 export default function TrainerScreen({ onBack }) {
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [trainers, setTrainers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch(API_URL)
-      .then((res) => res.json())
-      .then((data) => setTrainers(data))
-      .catch((err) => console.error("Failed to fetch trainers", err))
+      .then(res => res.json())
+      .then(data => setTrainers(data))
+      .catch(err => console.error('Failed to fetch trainers', err))
       .finally(() => setIsLoading(false));
   }, []);
 
   const handleBook = (trainerId, trainerName) => {
-    Alert.alert(
-      "Select Booking Type",
-      `How would you like to train with ${trainerName}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Single Session",
-          onPress: () => processBooking(trainerId, "single"),
-        },
-        {
-          text: "10-Session Package",
-          onPress: () => processBooking(trainerId, "package"),
-        },
-      ]
-    );
+    Alert.alert('Select Booking Type', `How would you like to train with ${trainerName}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Single Session',
+        onPress: () => processBooking(trainerId, 'single'),
+      },
+      {
+        text: '10-Session Package',
+        onPress: () => processBooking(trainerId, 'package'),
+      },
+    ]);
   };
 
   const processBooking = (trainerId, bookingType) => {
     fetch(`${process.env.EXPO_PUBLIC_API_URL}/book-trainer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         trainerId,
         memberId: 1, // Hardcoded for now, should ideally come from Context/Auth
@@ -62,20 +58,20 @@ export default function TrainerScreen({ onBack }) {
         bookingType,
       }),
     })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) Alert.alert("Success", data.message);
-        else Alert.alert("Error", "Booking failed.");
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) Alert.alert('Success', data.message);
+        else Alert.alert('Error', 'Booking failed.');
       })
-      .catch((err) => {
+      .catch(err => {
         console.error(err);
-        Alert.alert("Error", "Could not connect to server.");
+        Alert.alert('Error', 'Could not connect to server.');
       });
   };
 
   const filteredTrainers = trainers.filter(
-    (t) =>
-      (selectedCategory === "All" || t.specialty.includes(selectedCategory)) &&
+    t =>
+      (selectedCategory === 'All' || t.specialty.includes(selectedCategory)) &&
       t.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -113,23 +109,15 @@ export default function TrainerScreen({ onBack }) {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={CATEGORIES}
-            keyExtractor={(item) => item}
+            keyExtractor={item => item}
             renderItem={({ item }) => {
               const isActive = selectedCategory === item;
               return (
                 <TouchableOpacity
-                  style={[
-                    styles.categoryChip,
-                    isActive && styles.categoryChipActive,
-                  ]}
+                  style={[styles.categoryChip, isActive && styles.categoryChipActive]}
                   onPress={() => setSelectedCategory(item)}
                 >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      isActive && styles.categoryTextActive,
-                    ]}
-                  >
+                  <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>
                     {item}
                   </Text>
                 </TouchableOpacity>
@@ -140,22 +128,25 @@ export default function TrainerScreen({ onBack }) {
 
         {/* List */}
         {isLoading ? (
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
         ) : (
           <FlatList
             data={filteredTrainers}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
             renderItem={({ item }) => (
-              <TrainerCard
-                {...item}
-                onBook={() => handleBook(item.id, item.name)}
-              />
+              <TrainerCard {...item} onBook={() => handleBook(item.id, item.name)} />
+            )}
+            ListEmptyComponent={() => (
+              <View style={{ alignItems: 'center', marginTop: 50 }}>
+                <Ionicons name="people-outline" size={64} color={COLORS.surface} />
+                <Text style={{ marginTop: 20, color: COLORS.textSecondary, fontSize: 16 }}>
+                  No trainers found matching your criteria.
+                </Text>
+              </View>
             )}
           />
         )}
@@ -174,9 +165,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.padding,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginVertical: 20,
   },
   backBtn: {
@@ -184,19 +175,19 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: COLORS.surface,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   title: {
     color: COLORS.text,
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
     paddingHorizontal: 16,
     height: 50,
@@ -231,7 +222,7 @@ const styles = StyleSheet.create({
   categoryText: {
     color: COLORS.textSecondary,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   categoryTextActive: {
     color: COLORS.background,

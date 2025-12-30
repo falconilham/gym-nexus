@@ -1,36 +1,50 @@
+"use client";
+
 import Link from 'next/link';
 import { ArrowUpRight, Users, CreditCard, Activity } from 'lucide-react';
+import { 
+    Box, Typography, Button, Grid, Paper, List, ListItem, 
+    ListItemAvatar, Avatar, ListItemText, Chip 
+} from '@mui/material';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 
-async function getStats() {
-  try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-    const res = await fetch(`${API_URL}/api/admin/stats`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch stats');
-    return res.json();
-  } catch (error) {
-    console.error(error);
-    return { totalMembers: 0, dailyCheckIns: 0, revenue: 0, activeMembers: 0 };
-  }
-}
+// Client-side fetching for now since we are using "use client" for MUI
+// Alternatively we could keep it server-side if we separate components, but for simplicity we'll fetch on mount.
 
 const KPICard = ({ title, value, sub, icon: Icon, trend }: any) => (
-  <div className="bg-[#1E1E1E] border border-[#333] p-6 rounded-xl">
-    <div className="flex justify-between items-start mb-4">
-      <div className={`p-3 rounded-lg ${title === 'Revenue' ? 'bg-green-950/30' : 'bg-[#2C2C2C]'}`}>
-        <Icon size={24} className={title === 'Revenue' ? 'text-green-400' : 'text-[var(--primary)]'} />
-      </div>
+  <Paper sx={{ backgroundColor: '#1E1E1E', border: '1px solid #333', p: 3, borderRadius: 3 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ 
+          p: 1.5, 
+          borderRadius: 2, 
+          backgroundColor: title === 'Revenue' ? 'rgba(20, 83, 45, 0.3)' : '#2C2C2C',
+          color: title === 'Revenue' ? '#4ade80' : 'var(--primary)'
+      }}>
+        <Icon size={24} />
+      </Box>
       {trend && (
-        <span className="flex items-center text-xs font-bold text-green-400 bg-green-950/30 px-2 py-1 rounded">
-          +{trend}% <ArrowUpRight size={12} className="ml-1"/>
-        </span>
+        <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            fontSize: '0.75rem', 
+            fontWeight: 'bold', 
+            color: '#4ade80', 
+            backgroundColor: 'rgba(20, 83, 45, 0.3)', 
+            px: 1, 
+            py: 0.5, 
+            borderRadius: 1 
+        }}>
+          +{trend}% <ArrowUpRight size={12} style={{ marginLeft: 4 }}/>
+        </Box>
       )}
-    </div>
-    <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wide">{title}</h3>
-    <div className="flex items-baseline gap-2 mt-1">
-      <h2 className="text-3xl font-bold text-white">{value}</h2>
-      <span className="text-sm text-gray-500">{sub}</span>
-    </div>
-  </div>
+    </Box>
+    <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>{title}</Typography>
+    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>{value}</Typography>
+      <Typography variant="body2" sx={{ color: '#6B7280' }}>{sub}</Typography>
+    </Box>
+  </Paper>
 );
 
 const MOCK_CHECKINS = [
@@ -40,96 +54,197 @@ const MOCK_CHECKINS = [
   { id: 4, name: 'Diana Prince',plan: 'Pro',      time: '09:55 AM', status: 'Active' },
 ];
 
-export default async function Home() {
-  const stats = await getStats();
+export default function Home() {
+  const [stats, setStats] = useState({ totalMembers: 0, dailyCheckIns: 0, revenue: 0, activeMembers: 0 });
+  const [recentCheckIns, setRecentCheckIns] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+            
+            // Fetch Stats
+            const statsRes = await axios.get(`${API_URL}/api/admin/stats`);
+            setStats(statsRes.data);
+
+            // Fetch Recent Check-ins
+            const checkInsRes = await axios.get(`${API_URL}/api/admin/check-ins?limit=5`);
+            setRecentCheckIns(checkInsRes.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+    fetchData();
+  }, []);
 
   return (
-    <div className="space-y-8">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-           <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-           <p className="text-gray-400 mt-1">Welcome back, Admin</p>
-        </div>
-        <button className="bg-[var(--primary)] hover:bg-[#bbe300] text-black font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-colors">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+           <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>Dashboard</Typography>
+           <Typography variant="body2" sx={{ color: '#9CA3AF', mt: 0.5 }}>Welcome back, Admin</Typography>
+        </Box>
+        <Button 
+            variant="contained"
+            sx={{ 
+                backgroundColor: 'var(--primary)', 
+                color: 'black', 
+                fontWeight: 'bold',
+                padding: '12px 24px',
+                borderRadius: 2,
+                textTransform: 'none',
+                '&:hover': { backgroundColor: '#bbe300' },
+                display: 'flex',
+                gap: 1
+            }}
+        >
             <Activity size={20} />
             Live Monitor
-        </button>
-      </div>
+        </Button>
+      </Box>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <KPICard 
-            title="Total Members" 
-            value={stats.totalMembers.toLocaleString()} 
-            sub="Active" 
-            icon={Users} 
-            trend={12} 
-        />
-        <KPICard 
-            title="Daily Check-ins" 
-            value={stats.dailyCheckIns} 
-            sub="Today" 
-            icon={Activity} 
-             
-        />
-        <KPICard 
-            title="Revenue" 
-            value={`$${stats.revenue}`} 
-            sub="This Month" 
-            icon={CreditCard} 
-            trend={8.4} 
-        />
-      </div>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+        <Box>
+            <KPICard 
+                title="Total Members" 
+                value={stats.totalMembers.toLocaleString()} 
+                sub="Active" 
+                icon={Users} 
+                trend={12} 
+            />
+        </Box>
+        <Box>
+            <KPICard 
+                title="Daily Check-ins" 
+                value={stats.dailyCheckIns} 
+                sub="Today" 
+                icon={Activity} 
+            />
+        </Box>
+        <Box>
+            <KPICard 
+                title="Revenue" 
+                value={`$${stats.revenue}`} 
+                sub="This Month" 
+                icon={CreditCard} 
+                trend={8.4} 
+            />
+        </Box>
+      </Box>
 
       {/* Recent Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3 }}>
         {/* Check-in Feed */}
-        <div className="bg-[#1E1E1E] border border-[#333] rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-[#333] flex justify-between items-center">
-                <h3 className="text-lg font-bold text-white">Recent Check-ins</h3>
-                <button className="text-sm text-[var(--primary)] hover:underline">View All</button>
-            </div>
-            <div className="divide-y divide-[#333]">
-                {MOCK_CHECKINS.map((user) => (
-                    <div key={user.id} className="p-4 flex items-center justify-between hover:bg-[#252525] transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-[#333] flex items-center justify-center text-white font-bold">
-                                {user.name.charAt(0)}
-                            </div>
-                            <div>
-                                <h4 className="text-white font-medium">{user.name}</h4>
-                                <p className="text-xs text-gray-500">{user.plan} • {user.time}</p>
-                            </div>
-                        </div>
-                        <span className={`text-xs font-bold px-2 py-1 rounded ${
-                            user.status === 'Active' ? 'bg-green-950/30 text-green-400' : 'bg-red-950/30 text-red-400'
-                        }`}>
-                            {user.status}
-                        </span>
-                    </div>
-                ))}
-            </div>
-        </div>
+        <Box>
+            <Paper sx={{ backgroundColor: '#1E1E1E', border: '1px solid #333', borderRadius: 3, overflow: 'hidden' }}>
+                <Box sx={{ p: 3, borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white' }}>Recent Check-ins</Typography>
+                    <Button 
+                        component={Link} 
+                        href="/check-ins"
+                        sx={{ color: 'var(--primary)', textTransform: 'none', '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' } }}
+                    >
+                        View All
+                    </Button>
+                </Box>
+                <List sx={{ pt: 0, pb: 0 }}>
+                    {recentCheckIns.length > 0 ? (
+                        recentCheckIns.map((checkin, index) => (
+                            <ListItem 
+                                key={checkin.id} 
+                                sx={{ 
+                                    borderBottom: index !== recentCheckIns.length - 1 ? '1px solid #333' : 'none',
+                                    '&:hover': { backgroundColor: '#252525' }
+                                }}
+                            >
+                                <ListItemAvatar>
+                                    <Avatar sx={{ backgroundColor: '#333', color: 'white', fontWeight: 'bold' }}>
+                                        {checkin.memberName ? checkin.memberName.charAt(0) : '?'}
+                                    </Avatar>
+                                </ListItemAvatar>
+                                <ListItemText 
+                                    primary={<Typography sx={{ color: 'white', fontWeight: 500 }}>{checkin.memberName || 'Unknown'}</Typography>}
+                                    secondary={
+                                        <Typography variant="body2" sx={{ color: '#6B7280' }}>
+                                            {new Date(checkin.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(checkin.timestamp).toLocaleDateString()}
+                                        </Typography>
+                                    }
+                                />
+                                <Chip 
+                                    label={checkin.status === 'granted' ? 'Success' : 'Denied'} 
+                                    size="small"
+                                    sx={{ 
+                                        fontWeight: 'bold', 
+                                        borderRadius: 1,
+                                        backgroundColor: checkin.status === 'granted' ? 'rgba(20, 83, 45, 0.3)' : 'rgba(127, 29, 29, 0.3)',
+                                        color: checkin.status === 'granted' ? '#4ade80' : '#f87171'
+                                    }}
+                                />
+                            </ListItem>
+                        ))
+                    ) : (
+                        <Box sx={{ p: 3, textAlign: 'center', color: '#6B7280' }}>
+                            No check-ins today yet.
+                        </Box>
+                    )}
+                </List>
+            </Paper>
+        </Box>
 
         {/* Quick Actions / Scanner Placeholder */}
-        <div className="bg-[#1E1E1E] border border-[#333] rounded-xl p-6 flex flex-col items-center justify-center text-center">
-             <div className="w-20 h-20 bg-[#252525] rounded-full flex items-center justify-center mb-4 text-[var(--primary)]">
-                <Activity size={40} />
-             </div>
-             <h3 className="text-xl font-bold text-white">Scanner Standby</h3>
-             <p className="text-gray-400 mt-2 max-w-xs">
-                To start the QR Check-in kiosk mode, switch to the "Scanner" view.
-             </p>
-             <Link 
-                href="/scanner"
-                className="mt-6 w-full py-3 border border-[#333] rounded-lg text-white hover:bg-[#252525] transition-colors inline-block"
-             >
-                Launch Kiosk Mode
-             </Link>
-        </div>
-      </div>
-    </div>
+        <Box>
+            <Paper sx={{ 
+                backgroundColor: '#1E1E1E', 
+                border: '1px solid #333', 
+                borderRadius: 3, 
+                p: 4, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                textAlign: 'center',
+                height: '100%' 
+            }}>
+                 <Box sx={{ 
+                     width: 80, 
+                     height: 80, 
+                     borderRadius: '50%', 
+                     backgroundColor: '#252525', 
+                     display: 'flex', 
+                     alignItems: 'center', 
+                     justifyContent: 'center', 
+                     mb: 2, 
+                     color: 'var(--primary)' 
+                 }}>
+                    <Activity size={40} />
+                 </Box>
+                 <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'white' }}>Scanner Standby</Typography>
+                 <Typography variant="body2" sx={{ color: '#9CA3AF', mt: 1, maxWidth: 300 }}>
+                    To start the QR Check-in kiosk mode, switch to the "Scanner" view.
+                 </Typography>
+                 <Button 
+                    component={Link}
+                    href="/scanner"
+                    variant="outlined"
+                    fullWidth
+                    sx={{ 
+                        mt: 3, 
+                        py: 1.5,
+                        borderColor: '#333', 
+                        color: 'white', 
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        '&:hover': { backgroundColor: '#252525', borderColor: '#333' }
+                    }}
+                 >
+                    Launch Kiosk Mode
+                 </Button>
+            </Paper>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
