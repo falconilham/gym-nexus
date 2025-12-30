@@ -42,7 +42,10 @@ export default function ScannerPage() {
         await stopScanner();
       }
 
-      const html5QrCode = new Html5Qrcode("reader");
+      const html5QrCode = new Html5Qrcode("reader", { 
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+        verbose: false
+      });
       scannerRef.current = html5QrCode;
 
       setCameraError(null);
@@ -54,7 +57,6 @@ export default function ScannerPage() {
           fps: 10,
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1,
-          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ] 
         },
         (decodedText) => {
           handleScan(decodedText);
