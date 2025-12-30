@@ -6,7 +6,13 @@ const sequelize = process.env.DATABASE_URL
       dialect: 'postgres',
       logging: false,
       dialectOptions: {
-        ssl: false, // Railway uses internal networking, no SSL needed
+        ssl:
+          process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production'
+            ? {
+                require: true,
+                rejectUnauthorized: false, // Required for Supabase/Railway external connections
+              }
+            : false,
       },
     })
   : new Sequelize(
@@ -22,7 +28,7 @@ const sequelize = process.env.DATABASE_URL
 
 console.log(
   process.env.DATABASE_URL
-    ? 'Using DATABASE_URL (Railway PostgreSQL)'
+    ? `Using DATABASE_URL (${process.env.DATABASE_URL.includes('supabase') ? 'Supabase' : 'Remote'} PostgreSQL)`
     : 'Using individual DB env vars (local development)'
 );
 

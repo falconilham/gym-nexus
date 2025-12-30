@@ -14,25 +14,44 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "What would you like to deploy?"
-echo "1. Backend (API)"
-echo "2. Admin Panel"
-echo "3. Both"
+echo "1. Backend (API) + Database (Supabase)"
+echo "2. Admin Panel (Vercel)"
+echo "3. Everything"
 echo ""
 read -p "Enter your choice (1-3): " choice
 
 deploy_backend() {
     echo ""
-    echo "📦 Backend Deployment Options:"
-    echo "1. Railway (Recommended)"
-    echo "2. Render"
-    echo "3. Heroku"
+    echo "📦 Backend & DB Deployment Options:"
+    echo "1. Supabase (Database) + Render (API) - [Recommended]"
+    echo "2. Supabase (Database) + Railway (API)"
+    echo "3. Heroku (API + DB)"
     echo ""
     read -p "Choose platform (1-3): " platform
     
     case $platform in
         1)
             echo ""
-            echo "🚂 Deploying to Railway..."
+            echo "🔥 Setting up Supabase + Render..."
+            echo ""
+            echo "Step 1: Database (Supabase)"
+            echo "1. Create a project at supabase.com"
+            echo "2. Get your Connection String (URI) from Settings > Database"
+            echo "3. Make sure to replace [YOUR-PASSWORD] with your actual password"
+            echo ""
+            echo "Step 2: Backend API (Render)"
+            echo "1. Create a Web Service at render.com"
+            echo "2. Connect this repo and set Root Directory to 'backend'"
+            echo "3. Set Environment Variables:"
+            echo "   - DATABASE_URL = (Your Supabase URI)"
+            echo "   - DB_SSL = true"
+            echo "   - NODE_ENV = production"
+            echo ""
+            read -p "Press Enter once you have configured these steps..."
+            ;;
+        2)
+            echo ""
+            echo "🚂 Deploying to Railway with Supabase DB..."
             echo ""
             
             if ! command -v railway &> /dev/null; then
@@ -41,47 +60,18 @@ deploy_backend() {
             fi
             
             cd backend
-            
-            echo "Logging in to Railway..."
             railway login
-            
-            echo ""
-            echo "Initializing project..."
             railway init
             
             echo ""
-            read -p "Do you want to add PostgreSQL database? (y/n): " -n 1 -r
-            echo ""
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                railway add
-            fi
+            echo "Set your Supabase Connection String:"
+            read -p "DATABASE_URL: " db_url
+            railway variables set DATABASE_URL="$db_url"
+            railway variables set DB_SSL="true"
+            railway variables set NODE_ENV="production"
             
-            echo ""
-            echo "Deploying backend..."
             railway up
-            
-            echo ""
-            echo "✅ Backend deployed!"
-            echo "Get your URL with: railway domain"
-            
             cd ..
-            ;;
-        2)
-            echo ""
-            echo "📝 Deploying to Render..."
-            echo ""
-            echo "Please follow these steps:"
-            echo "1. Go to https://render.com"
-            echo "2. Click 'New +' → 'Web Service'"
-            echo "3. Connect your GitHub repository: gym-nexus"
-            echo "4. Configure:"
-            echo "   - Root Directory: backend"
-            echo "   - Build Command: npm install"
-            echo "   - Start Command: npm start"
-            echo "5. Add PostgreSQL database from dashboard"
-            echo "6. Set environment variables"
-            echo ""
-            read -p "Press Enter when done..."
             ;;
         3)
             echo ""
@@ -192,5 +182,5 @@ esac
 echo ""
 echo "🎉 Deployment complete!"
 echo ""
-echo "📚 For more details, see DEPLOYMENT.md"
+echo "📚 For more details, see SUPABASE_DEPLOYMENT.md"
 echo ""

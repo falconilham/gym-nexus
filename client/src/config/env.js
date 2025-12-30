@@ -16,7 +16,7 @@ const ENV = {
     APP_VERSION: '1.0.0',
   },
   production: {
-    API_URL: 'https://gym-nexus-backend-production.up.railway.app',
+    API_URL: 'https://your-production-backend-url.com', // Update this after deploying backend
     APP_NAME: 'GymNexus',
     APP_VERSION: '1.0.0',
   },
