@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,60 +9,115 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  RefreshControl,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
+import { API_ENDPOINTS } from '../utils/api';
+import axios from 'axios';
 
-const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/classes`;
-const BOOK_URL = `${process.env.EXPO_PUBLIC_API_URL}/book-class`;
-
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-export default function ScheduleScreen({ onBack }) {
-  const [selectedDay, setSelectedDay] = useState('Wed'); // Mock 'Today'
+export default function ScheduleScreen({ selectedMembership, onBack }) {
+  const [scheduleDays, setScheduleDays] = useState([]);
+  const [selectedDay, setSelectedDay] = useState('');
   const [classes, setClasses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Generate Schedule Days (Next 7 days)
+  useEffect(() => {
+    const days = [];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      days.push({
+        name: d.toLocaleDateString('en-US', { weekday: 'short' }), // Mon, Tue...
+        date: d.getDate(), // 15, 16...
+        fullDate: d.toISOString().split('T')[0],
+      });
+    }
+    setScheduleDays(days);
+    setSelectedDay(days[0].name);
+  }, []);
+
+  const fetchClasses = async (showLoading = true) => {
+    try {
+      if (showLoading) setIsLoading(true);
+      const gymId = selectedMembership?.Gym?.id || selectedMembership?.gymId;
+
+      if (!gymId) {
+        console.error('No gym ID available');
+        Alert.alert('Error', 'Gym information not available');
+        if (showLoading) setIsLoading(false);
+        return;
+      }
+
+      const response = await axios.get(API_ENDPOINTS.classes, {
+        params: { gymId },
+      });
+      setClasses(response.data);
+    } catch (err) {
+      console.error('Failed to fetch classes:', err);
+      Alert.alert('Error', 'Failed to load classes. Please try again.');
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => setClasses(data))
-      .catch(err => console.error('Failed to fetch classes', err))
-      .finally(() => setIsLoading(false));
-  }, []);
+    fetchClasses();
+  }, [selectedMembership]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchClasses(false);
+    setRefreshing(false);
+  }, [selectedMembership]);
 
   const handleBook = (classId, title) => {
     Alert.alert('Book Class', `Confirm booking for ${title}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Confirm',
-        onPress: () => {
-          fetch(BOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ classId, memberId: 1 }),
-          })
-            .then(res => res.json())
-            .then(data => {
-              if (data.success) Alert.alert('Success', data.message);
-              else Alert.alert('Error', 'Booking failed.');
-            })
-            .catch(err => Alert.alert('Error', 'Server error'));
+        onPress: async () => {
+          try {
+            const response = await axios.post(API_ENDPOINTS.bookClass, {
+              classId,
+              memberId: 1, // ToDo: Get from context
+            });
+
+            if (response.data.success) {
+              Alert.alert('Success', response.data.message);
+            } else {
+              Alert.alert('Error', 'Booking failed.');
+            }
+          } catch (err) {
+            console.error('Booking error:', err);
+            Alert.alert('Error', 'Could not connect to server. Please try again.');
+          }
         },
       },
     ]);
   };
 
+  // Filter classes by selected Day
+  const filteredClasses = useMemo(() => {
+    if (!selectedDay) return [];
+    return classes.filter(c => c.day === selectedDay || !c.day); // Fallback: Show classes without day (legacy) on ALL days, or hide. Showing them ensures demo isn't empty.
+    // Ideally: return classes.filter(c => c.day === selectedDay);
+  }, [classes, selectedDay]);
+
   const renderClassItem = ({ item }) => {
-    // Mock filter: show all for now or randomize based on day?
-    // For demo, we just show all
     const isFull = item.booked >= item.capacity;
 
     return (
       <View style={styles.card}>
         <View style={[styles.timeStrip, { backgroundColor: item.color || COLORS.primary }]}>
-          <Text style={styles.timeText}>{item.time.split(' ')[0]}</Text>
-          <Text style={styles.ampm}>{item.time.split(' ')[1]}</Text>
+          <Text style={styles.timeText}>{item.time ? item.time.split(' ')[0] : 'TBA'}</Text>
+          <Text style={styles.ampm}>
+            {item.time && item.time.split(' ')[1] ? item.time.split(' ')[1] : ''}
+          </Text>
         </View>
         <View style={styles.cardContent}>
           <View>
@@ -106,16 +161,16 @@ export default function ScheduleScreen({ onBack }) {
 
       {/* Calendar Strip */}
       <View style={styles.calendarStrip}>
-        {DAYS.map((day, index) => {
-          const isActive = day === selectedDay;
+        {scheduleDays.map((item, index) => {
+          const isActive = item.name === selectedDay;
           return (
             <TouchableOpacity
-              key={day}
+              key={index}
               style={[styles.dayItem, isActive && styles.dayItemActive]}
-              onPress={() => setSelectedDay(day)}
+              onPress={() => setSelectedDay(item.name)}
             >
-              <Text style={[styles.dayText, isActive && styles.dayTextActive]}>{day}</Text>
-              <Text style={[styles.dateText, isActive && styles.dateTextActive]}>{15 + index}</Text>
+              <Text style={[styles.dayText, isActive && styles.dayTextActive]}>{item.name}</Text>
+              <Text style={[styles.dateText, isActive && styles.dateTextActive]}>{item.date}</Text>
             </TouchableOpacity>
           );
         })}
@@ -127,15 +182,22 @@ export default function ScheduleScreen({ onBack }) {
         </View>
       ) : (
         <FlatList
-          data={classes}
+          data={filteredClasses}
           keyExtractor={item => item.id.toString()}
-          renderItem={renderClassItem}
           contentContainerStyle={{ padding: SIZES.padding }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+            />
+          }
+          renderItem={renderClassItem}
           ListEmptyComponent={() => (
             <View style={{ alignItems: 'center', marginTop: 50 }}>
               <Ionicons name="calendar-outline" size={64} color={COLORS.surface} />
               <Text style={{ marginTop: 20, color: COLORS.textSecondary, fontSize: 16 }}>
-                No classes scheduled for this day.
+                No classes scheduled for {selectedDay}.
               </Text>
             </View>
           )}
@@ -156,6 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SIZES.padding,
     paddingVertical: 10,
+    marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   backBtn: {
     width: 40,
@@ -197,7 +260,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dayTextActive: {
-    color: COLORS.background,
+    color: 'black',
     fontWeight: 'bold',
   },
   dateText: {
@@ -206,7 +269,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   dateTextActive: {
-    color: COLORS.background,
+    color: 'black',
   },
   card: {
     flexDirection: 'row',
@@ -218,20 +281,19 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   timeStrip: {
-    width: 80,
+    width: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 10,
+    paddingVertical: 10,
   },
   timeText: {
-    color: '#000',
-    fontSize: 18,
+    color: 'black',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   ampm: {
-    color: 'rgba(0,0,0,0.6)',
+    color: 'black',
     fontSize: 12,
-    fontWeight: '600',
   },
   cardContent: {
     flex: 1,
@@ -261,16 +323,18 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   bookBtn: {
-    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
   },
   fullBtn: {
-    backgroundColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   bookBtnText: {
-    color: COLORS.background,
+    color: 'black',
     fontWeight: 'bold',
     fontSize: 12,
   },

@@ -15,6 +15,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
+import { API_ENDPOINTS } from '../utils/api';
+import axios from 'axios';
 
 export default function ForgotPasswordScreen({ onBack }) {
   const [email, setEmail] = useState('');
@@ -28,18 +30,17 @@ export default function ForgotPasswordScreen({ onBack }) {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+      const response = await axios.post(API_ENDPOINTS.forgotPassword, {
+        email,
       });
-      const data = await response.json();
+      const data = response.data;
 
       Alert.alert(data.success ? 'Check your email' : 'Error', data.message, [
         { text: 'OK', onPress: data.success ? onBack : null },
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Could not connect to server.');
+      console.error('Forgot password error:', error);
+      Alert.alert('Error', 'Could not connect to server. Please try again.');
     } finally {
       setIsLoading(false);
     }

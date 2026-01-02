@@ -11,15 +11,16 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES } from '../constants/theme';
 import ClassCard from '../components/ClassCard';
+import { API_URL, API_ENDPOINTS } from '../utils/api';
+import axios from 'axios';
 
-const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/dashboard`;
-
-export default function DashboardScreen({ onNavigate, user }) {
+export default function DashboardScreen({ onNavigate, user, selectedMembership }) {
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,18 +84,52 @@ export default function DashboardScreen({ onNavigate, user }) {
 
   const fetchDashboard = useCallback(async () => {
     try {
-      // Use user.id from props, fallback to 1 for dev
-      const userId = user?.id || 1;
-      const res = await fetch(`${API_URL}/${userId}`);
-      const data = await res.json();
-      setDashboardData(data);
+      if (!user?.id || !selectedMembership?.id) {
+        console.error('Missing user or membership data');
+        return;
+      }
+
+      const response = await axios.get(API_ENDPOINTS.dashboard(user.id, selectedMembership.id));
+      setDashboardData(response.data);
     } catch (error) {
       console.error('Failed to fetch dashboard:', error);
+      Alert.alert('Error', 'Failed to load dashboard. Please try again.');
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user]);
+  }, [user, selectedMembership]);
+
+  const handleCheckout = async () => {
+    try {
+      if (!user?.id || !selectedMembership?.id || !selectedMembership?.gymId) {
+        Alert.alert('Error', 'Missing required information for checkout');
+        return;
+      }
+
+      const response = await axios.post(API_ENDPOINTS.checkIn, {
+        userId: user.id,
+        gymId: selectedMembership.gymId,
+        membershipId: selectedMembership.id,
+      });
+
+      const data = response.data;
+
+      if (data.success && data.type === 'checkout') {
+        Alert.alert('Success', data.message || 'Checked out successfully!');
+        // Refresh dashboard to update UI
+        fetchDashboard();
+      } else if (data.success && data.type === 'checkin') {
+        Alert.alert('Info', 'You have been checked in');
+        fetchDashboard();
+      } else {
+        Alert.alert('Error', data.message || 'Checkout failed');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      Alert.alert('Error', 'Could not connect to server. Please try again.');
+    }
+  };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -180,7 +215,11 @@ export default function DashboardScreen({ onNavigate, user }) {
           </View>
           <TouchableOpacity style={styles.profileBtn} onPress={() => onNavigate('profile')}>
             <Image
-              source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+              source={
+                user?.memberPhoto
+                  ? { uri: user.memberPhoto }
+                  : { uri: 'https://randomuser.me/api/portraits/men/32.jpg' }
+              }
               style={styles.profileImg}
             />
             <View style={styles.notificationDot} />
@@ -255,11 +294,7 @@ export default function DashboardScreen({ onNavigate, user }) {
 
         {/* Active Session Timer OR QR Access Card */}
         {latestCheckIn && sessionDuration < 12 * 60 * 60 ? (
-          <TouchableOpacity
-            onPress={() => setShowQRModal(true)}
-            activeOpacity={0.9}
-            style={{ marginBottom: 24 }}
-          >
+          <View style={{ marginBottom: 24 }}>
             <LinearGradient
               colors={['#1e3a8a', '#172554']}
               style={{
@@ -330,7 +365,31 @@ export default function DashboardScreen({ onNavigate, user }) {
                 <Ionicons name="timer-outline" size={28} color="#60a5fa" />
               </View>
             </LinearGradient>
-          </TouchableOpacity>
+
+            {/* Checkout Button */}
+            <TouchableOpacity
+              onPress={handleCheckout}
+              activeOpacity={0.8}
+              style={{
+                marginTop: 12,
+                backgroundColor: '#dc2626',
+                paddingVertical: 14,
+                paddingHorizontal: 20,
+                borderRadius: SIZES.radius,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#dc2626',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6,
+              }}
+            >
+              <Ionicons name="log-out-outline" size={20} color="white" style={{ marginRight: 8 }} />
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Check Out</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <TouchableOpacity onPress={() => setShowQRModal(true)} activeOpacity={0.8}>
             <LinearGradient colors={[COLORS.surface, '#252525']} style={styles.accessCard}>
@@ -341,7 +400,7 @@ export default function DashboardScreen({ onNavigate, user }) {
               <View style={styles.qrContainer}>
                 <Image
                   source={{
-                    uri: `${process.env.EXPO_PUBLIC_API_URL}/qr/${user?.id}?t=${qrTimestamp}`,
+                    uri: API_ENDPOINTS.qr(user?.id, selectedMembership?.id, qrTimestamp),
                   }}
                   style={{ width: 150, height: 150 }}
                   resizeMode="contain"
@@ -495,7 +554,7 @@ export default function DashboardScreen({ onNavigate, user }) {
                 <React.Fragment>
                   <Image
                     source={{
-                      uri: `${process.env.EXPO_PUBLIC_API_URL}/qr/${user.id}?t=${qrTimestamp}`,
+                      uri: API_ENDPOINTS.qr(user.id, selectedMembership?.id, qrTimestamp),
                     }}
                     style={{ width: 280, height: 280 }}
                     resizeMode="contain"

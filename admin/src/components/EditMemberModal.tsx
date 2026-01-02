@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import { 
     Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, 
-    Select, MenuItem, InputLabel, Box, IconButton, Checkbox, Typography 
+    Select, MenuItem, InputLabel, Box, IconButton, Checkbox, Typography, Avatar 
 } from '@mui/material';
 import axios from 'axios';
 
@@ -10,8 +10,14 @@ interface Member {
   id: number;
   name: string;
   email: string;
+  phone?: string;
+  memberPhoto?: string;
   duration?: string;
   endDate?: string;
+  User?: {
+    phone?: string;
+    memberPhoto?: string;
+  };
 }
 
 interface EditMemberModalProps {
@@ -25,20 +31,83 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    duration: '1 Month' // If they want to extend
+    phone: '',
+    memberPhoto: '',
+    duration: '1 Month'
   });
   const [extendMode, setExtendMode] = useState(false);
-  console.log({isOpen})
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>('');
+
   useEffect(() => {
     if (member) {
+        const phone = member.User?.phone || member.phone || '';
+        const memberPhoto = member.User?.memberPhoto || member.memberPhoto || '';
+        
         setFormData({
             name: member.name,
             email: member.email,
+            phone: phone,
+            memberPhoto: memberPhoto,
             duration: '1 Month'
         });
+        setPhotoPreview(memberPhoto);
         setExtendMode(false);
     }
   }, [member]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      setPhotoFile(file);
+      
+      // Compress and convert to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          let width = img.width;
+          let height = img.height;
+          const maxSize = 800;
+          
+          if (width > height) {
+            if (width > maxSize) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          setPhotoPreview(compressedBase64);
+          setFormData({ ...formData, memberPhoto: compressedBase64 });
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,10 +115,11 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
     
     try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-        // Decide if we are updating profile or extending membership
         const body = {
             name: formData.name,
             email: formData.email,
+            phone: formData.phone,
+            memberPhoto: formData.memberPhoto,
             extendDuration: extendMode ? formData.duration : null
         };
 
@@ -58,9 +128,21 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
         if (res.status === 200) {
             onSuccess();
             onClose();
+            setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                memberPhoto: '',
+                duration: '1 Month'
+            });
+            setPhotoPreview('');
+            setExtendMode(false);
         }
     } catch (error) {
         console.error('Error updating member:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            alert(`Failed to update member: ${error.response.data.error || error.message}`);
+        }
     }
   };
 
@@ -75,7 +157,7 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
                 border: '1px solid #333',
                 borderRadius: 3,
                 width: '100%',
-                maxWidth: '450px'
+                maxWidth: '500px'
             }
         }}
     >
@@ -129,6 +211,70 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
                             }
                         }}
                     />
+                </Box>
+
+                <Box>
+                    <InputLabel sx={{ color: '#9CA3AF', mb: 1, fontSize: '0.875rem' }}>Phone Number</InputLabel>
+                    <TextField 
+                        fullWidth
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                         placeholder="+62 (812) 123-4567"
+                        variant="outlined"
+                        InputProps={{
+                            sx: { 
+                                color: 'white', 
+                                backgroundColor: '#0F0F0F', 
+                                borderRadius: 2,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#333' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#444' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--primary)' }
+                            }
+                        }}
+                    />
+                </Box>
+
+                <Box>
+                    <InputLabel sx={{ color: '#9CA3AF', mb: 1, fontSize: '0.875rem' }}>Member Photo</InputLabel>
+                    <Typography variant="caption" sx={{ color: '#6B7280', display: 'block', mb: 1 }}>
+                        Used for admin verification and client profile (max 5MB)
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {photoPreview && (
+                            <Avatar
+                                src={photoPreview}
+                                sx={{ width: 80, height: 80, border: '2px solid var(--primary)' }}
+                            />
+                        )}
+                        
+                        <Button
+                            component="label"
+                            variant="outlined"
+                            sx={{
+                                color: 'white',
+                                borderColor: '#333',
+                                backgroundColor: '#0F0F0F',
+                                '&:hover': {
+                                    borderColor: 'var(--primary)',
+                                    backgroundColor: '#1a1a1a'
+                                },
+                                display: 'flex',
+                                gap: 1,
+                                flex: 1
+                            }}
+                        >
+                            <Upload size={20} />
+                            {photoFile ? photoFile.name : 'Change Image'}
+                            <input
+                                type="file"
+                                hidden
+                                accept="image/*"
+                                onChange={handleFileChange}
+                            />
+                        </Button>
+                    </Box>
                 </Box>
 
                 <Box sx={{ p: 2, backgroundColor: '#2C2C2C', borderRadius: 2, border: '1px solid #333' }}>

@@ -1,25 +1,14 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { COLORS, SIZES, ALIGN } from "../constants/theme";
+import React from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SIZES, ALIGN } from '../constants/theme';
 
-export default function TrainerCard({
-  name,
-  specialty,
-  rating,
-  image,
-  price,
-  onBook,
-}) {
+export default function TrainerCard({ name, specialty, rating, image, price, onBook }) {
   return (
     <View style={styles.container}>
       <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: image }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
       </View>
 
       <View style={styles.infoContainer}>
@@ -35,13 +24,13 @@ export default function TrainerCard({
 
         <View style={[ALIGN.rowBetween, { marginTop: 12 }]}>
           <Text style={styles.price}>
-            ${price}
+            Rp {price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
             <Text style={styles.perHr}>/hr</Text>
           </Text>
 
           <TouchableOpacity onPress={onBook}>
             <LinearGradient
-              colors={[COLORS.primary, "#96E6A1"]}
+              colors={[COLORS.primary, '#96E6A1']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.bookBtn}
@@ -57,7 +46,7 @@ export default function TrainerCard({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
+    flexDirection: 'row',
     backgroundColor: COLORS.surface,
     borderRadius: SIZES.radius,
     padding: 12,
@@ -69,21 +58,21 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: SIZES.radius,
-    overflow: "hidden",
+    overflow: 'hidden',
     marginRight: 16,
   },
   image: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   infoContainer: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   name: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   specialty: {
     color: COLORS.textSecondary,
@@ -91,9 +80,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(204, 255, 0, 0.1)",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -101,18 +90,18 @@ const styles = StyleSheet.create({
   rating: {
     color: COLORS.primary,
     fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginLeft: 4,
   },
   price: {
     color: COLORS.text,
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   perHr: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    fontWeight: "normal",
+    fontWeight: 'normal',
   },
   bookBtn: {
     paddingHorizontal: 20,
@@ -122,6 +111,6 @@ const styles = StyleSheet.create({
   bookText: {
     color: COLORS.background,
     fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
 });

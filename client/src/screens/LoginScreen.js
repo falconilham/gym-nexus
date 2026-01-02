@@ -15,10 +15,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, ALIGN } from '../constants/theme';
+import { API_ENDPOINTS } from '../utils/api';
+import axios from 'axios';
 
-const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/login`;
-
-export default function LoginScreen({ onLogin, onForgotPassword }) {
+export default function LoginScreen({ onLoginSuccess, onForgotPassword }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,25 +32,28 @@ export default function LoginScreen({ onLogin, onForgotPassword }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const response = await axios.post(API_ENDPOINTS.login, {
+        email,
+        password,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok && data.success) {
-        // Success
-        onLogin(data.user);
+      if (data.success) {
+        // Check if user has memberships
+        if (data.memberships && data.memberships.length > 0) {
+          // Pass user and memberships to parent
+          onLoginSuccess(data.user, data.memberships);
+        } else {
+          // No memberships
+          Alert.alert('No Membership', "You don't have any active gym memberships.");
+        }
       } else {
         Alert.alert('Login Failed', data.message || 'Invalid credentials');
       }
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Could not connect to server. Ensure backend is running.');
+      console.error('Login error:', error);
+      Alert.alert('Error', 'Could not connect to server. Please check your connection.');
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +92,7 @@ export default function LoginScreen({ onLogin, onForgotPassword }) {
             />
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              // placeholder="Email"
               placeholderTextColor={COLORS.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -107,7 +110,7 @@ export default function LoginScreen({ onLogin, onForgotPassword }) {
             />
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              // placeholder="Password"
               placeholderTextColor={COLORS.textSecondary}
               value={password}
               onChangeText={setPassword}

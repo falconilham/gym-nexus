@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Sidebar from '@/components/Sidebar';
 import "./globals.css";
-import { Box } from "@mui/material";
+import ClientLayout from '@/components/ClientLayout';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GymNexus Admin",
-  description: "Gym Administration Portal",
+  title: "GymNexus | The Intelligent Gym Management Ecosystem",
+  description: "Empower your fitness business with GymNexus. Manage members, track performance, and scale your operations with our unified management platform.",
 };
 
 export default function RootLayout({
@@ -31,12 +30,9 @@ export default function RootLayout({
         style={{ margin: 0, padding: 0 }}
         suppressHydrationWarning
       >
-        <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0F0F0F' }}>
-            <Sidebar />
-             <Box component="main" sx={{ flex: 1, p: 4, backgroundColor: '#0F0F0F' }}>
-                {children}
-            </Box>
-        </Box>
+        <ClientLayout>
+            {children}
+        </ClientLayout>
       </body>
     </html>
   );
