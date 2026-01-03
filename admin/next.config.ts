@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   
+
+  
+  images: {
+    unoptimized: true, // Keep this for simpler image handling
+  },
+  
   async headers() {
     return [
       {

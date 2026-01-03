@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname, useParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
 import { useTenantUrl } from './useTenantUrl';
 
@@ -31,6 +31,7 @@ export function useAuth(requireSuperAdmin = false) {
     const adminData = localStorage.getItem('admin');
     
     if (!adminData) {
+      setLoading(false); // Stop loading before redirect
       if (requireSuperAdmin) {
         router.push('/super-admin/login');
       } else {
@@ -44,6 +45,7 @@ export function useAuth(requireSuperAdmin = false) {
       
       // Check if super admin is required
       if (requireSuperAdmin && parsedAdmin.role !== 'super_admin') {
+        setLoading(false);
         router.push(getUrl('/'));
         return;
       }
@@ -52,6 +54,8 @@ export function useAuth(requireSuperAdmin = false) {
       setLoading(false);
     } catch (error) {
       console.error('Error parsing admin data:', error);
+      setLoading(false); // Stop loading before redirect
+      localStorage.removeItem('admin'); // Clear bad data
       if (requireSuperAdmin) {
         router.push('/super-admin/login');
       } else {

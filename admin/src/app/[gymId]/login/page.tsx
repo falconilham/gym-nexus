@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Paper,
@@ -16,6 +16,7 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { Dumbbell } from 'lucide-react';
 import axios from 'axios';
 import { useTenantUrl } from '@/hooks/useTenantUrl';
+import Image from 'next/image';
 
 interface GymConfig {
     name: string;
@@ -25,20 +26,20 @@ interface GymConfig {
 
 export default function LoginPage() {
   const router = useRouter();
-  const params = useParams(); // params.gymId should be available
-  const { getUrl } = useTenantUrl();
+  const { getUrl, gymId } = useTenantUrl();
   const [gymConfig, setGymConfig] = useState<GymConfig | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
-    if (params.gymId) {
-        axios.get(`${API_URL}/api/client/config?gymId=${params.gymId}`)
+    if (gymId) {
+        axios.get(`${API_URL}/api/client/config?gymId=${gymId}`)
             .then(res => {
                 setGymConfig(res.data);
                 if (res.data.primaryColor) {
@@ -50,7 +51,8 @@ export default function LoginPage() {
                 console.error('Failed to load gym config:', error.response?.data?.error)
             });
     }
-  }, [params.gymId]);
+     
+  }, [gymId]);
 
   const handleLogin = async (e: React.FormEvent) => {
     // ... existing handleLogin logic ...
@@ -109,14 +111,16 @@ export default function LoginPage() {
           borderRadius: 3,
         }}
       >
-        {/* Logo */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          {gymConfig?.logo ? (
+          {gymConfig?.logo && !imageError ? (
              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-               <img 
+               <Image 
                  src={gymConfig.logo} 
                  alt={gymConfig.name || "Gym Logo"} 
-                 style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }} 
+                 width={200}
+                 height={80}
+                 style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }}
+                 onError={() => setImageError(true)}
                />
              </Box>
           ) : (

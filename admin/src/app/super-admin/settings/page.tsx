@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { 
     Box, Typography, Paper, TextField, Button, Grid, 
-    Alert, CircularProgress, InputAdornment, IconButton
+    Alert, InputAdornment, IconButton
 } from '@mui/material';
 import { Save, RefreshCw, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
@@ -12,7 +12,6 @@ import SuperAdminLayout from '@/components/SuperAdminLayout';
 
 export default function SuperAdminSettingsPage() {
     const { admin } = useAuth();
-    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -54,7 +53,7 @@ export default function SuperAdminSettingsPage() {
                 return;
             }
 
-            const response = await axios.put(`${API_URL}/api/super-admin/profile`, {
+            await axios.put(`${API_URL}/api/super-admin/profile`, {
                 name: formData.name,
                 email: formData.email,
             });
@@ -103,7 +102,7 @@ export default function SuperAdminSettingsPage() {
                 return;
             }
 
-            const response = await axios.put(`${API_URL}/api/super-admin/change-password`, {
+            await axios.put(`${API_URL}/api/super-admin/change-password`, {
                 currentPassword: formData.currentPassword,
                 newPassword: formData.newPassword,
             });

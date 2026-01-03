@@ -48,6 +48,7 @@ const Gym = sequelize.define('Gym', {
   maxMembers: { type: DataTypes.INTEGER, defaultValue: 100 },
   createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   trialEndsAt: { type: DataTypes.DATE },
+  primaryColor: { type: DataTypes.STRING, defaultValue: '#bef264' },
   secondaryColor: { type: DataTypes.STRING, defaultValue: '#1a1a1a' },
   features: {
     type: DataTypes.JSON,
@@ -130,6 +131,8 @@ const Member = sequelize.define(
     userId: { type: DataTypes.INTEGER, allowNull: false }, // Links to User
     status: { type: DataTypes.STRING, defaultValue: 'Active' },
     suspended: { type: DataTypes.BOOLEAN, defaultValue: false },
+    suspensionReason: { type: DataTypes.TEXT },
+    suspensionEndDate: { type: DataTypes.DATE },
     joinDate: { type: DataTypes.STRING },
     endDate: { type: DataTypes.STRING },
     duration: { type: DataTypes.STRING },
@@ -154,6 +157,8 @@ const Trainer = sequelize.define('Trainer', {
   packagePrice: { type: DataTypes.INTEGER },
   packageCount: { type: DataTypes.INTEGER, defaultValue: 10 },
   image: { type: DataTypes.TEXT },
+  suspended: { type: DataTypes.BOOLEAN, defaultValue: false },
+  suspensionReason: { type: DataTypes.TEXT },
 });
 
 const Class = sequelize.define('Class', {
@@ -171,10 +176,9 @@ const Class = sequelize.define('Class', {
 const Equipment = sequelize.define('Equipment', {
   gymId: { type: DataTypes.INTEGER, allowNull: false },
   name: { type: DataTypes.STRING, allowNull: false },
+  brand: { type: DataTypes.STRING },
   category: { type: DataTypes.STRING },
-  status: { type: DataTypes.STRING },
-  lastService: { type: DataTypes.STRING },
-  nextService: { type: DataTypes.STRING },
+  status: { type: DataTypes.STRING, defaultValue: 'Active' },
 });
 
 const Booking = sequelize.define('Booking', {
@@ -200,6 +204,14 @@ const Specialty = sequelize.define('Specialty', {
   name: { type: DataTypes.STRING, allowNull: false },
 });
 
+const ActivityLog = sequelize.define('ActivityLog', {
+  gymId: { type: DataTypes.INTEGER, allowNull: false },
+  adminName: { type: DataTypes.STRING }, // Who performed the action
+  action: { type: DataTypes.STRING, allowNull: false }, // e.g., 'MEMBER_ADDED'
+  details: { type: DataTypes.TEXT }, // Description or JSON data
+  timestamp: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+});
+
 // --- RELATIONSHIPS ---
 Gym.hasMany(Admin, { foreignKey: 'gymId', onDelete: 'CASCADE' });
 Gym.hasMany(Member, { foreignKey: 'gymId', onDelete: 'CASCADE' });
@@ -209,6 +221,7 @@ Gym.hasMany(Equipment, { foreignKey: 'gymId', onDelete: 'CASCADE' });
 Gym.hasMany(Booking, { foreignKey: 'gymId', onDelete: 'CASCADE' });
 Gym.hasMany(CheckIn, { foreignKey: 'gymId', onDelete: 'CASCADE' });
 Gym.hasMany(Specialty, { foreignKey: 'gymId', onDelete: 'CASCADE' });
+Gym.hasMany(ActivityLog, { foreignKey: 'gymId', onDelete: 'CASCADE' });
 
 Admin.belongsTo(Gym, { foreignKey: 'gymId' });
 Member.belongsTo(Gym, { foreignKey: 'gymId' });
@@ -218,6 +231,7 @@ Equipment.belongsTo(Gym, { foreignKey: 'gymId' });
 Booking.belongsTo(Gym, { foreignKey: 'gymId' });
 CheckIn.belongsTo(Gym, { foreignKey: 'gymId' });
 Specialty.belongsTo(Gym, { foreignKey: 'gymId' });
+ActivityLog.belongsTo(Gym, { foreignKey: 'gymId' });
 
 // User-Member relationships (many-to-many through Member)
 User.hasMany(Member, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -246,5 +260,6 @@ module.exports = {
   Booking,
   CheckIn,
   Specialty,
+  ActivityLog,
   seedDatabase,
 };

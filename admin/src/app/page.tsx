@@ -36,9 +36,21 @@ export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [currentLang, setCurrentLang] = useState('en'); // Default to 'en' for SSR
 
   useEffect(() => {
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/super-admin/gyms`)
+    // Set mounted and sync language after client-side hydration
+    setTimeout(() => {
+      setMounted(true);
+      setCurrentLang(i18n.language);
+    }, 0);
+    
+    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/super-admin/gyms`, {
+      headers: {
+        "ngrok-skip-browser-warning": "true"
+      }
+    })
         .then(res => setGyms(res.data))
         .catch(err => console.error(err));
 
@@ -47,11 +59,12 @@ export default function LandingPage() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [i18n.language]);
 
   const changeLanguage = (event: React.MouseEvent<HTMLElement>, newLang: string) => {
     if (newLang !== null) {
       i18n.changeLanguage(newLang);
+      setCurrentLang(newLang);
     }
   };
 
@@ -105,7 +118,7 @@ export default function LandingPage() {
 
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
             <ToggleButtonGroup
-              value={i18n.language}
+              value={mounted ? currentLang : 'en'}
               exclusive
               onChange={changeLanguage}
               aria-label="language selector"

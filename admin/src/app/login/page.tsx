@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Paper,
@@ -15,12 +15,12 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { Dumbbell } from 'lucide-react';
 import axios from 'axios';
+import Image from 'next/image';
 
 import { useGym } from '@/context/GymContext';
 
 export default function LoginPage() {
   const router = useRouter();
-  const params = useParams();
   const { gym } = useGym();
   // console.log('LoginPage render. Gym:', gym);
   const [email, setEmail] = useState('');
@@ -28,6 +28,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -92,14 +93,16 @@ export default function LoginPage() {
           borderRadius: 3,
         }}
       >
-        {/* Logo */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          {gym?.logo ? (
+          {gym?.logo && !imageError ? (
              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-               <img 
+               <Image 
                  src={gym.logo} 
                  alt={gym.name || "Gym Logo"} 
-                 style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }} 
+                 width={200}
+                 height={80}
+                 style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }}
+                 onError={() => setImageError(true)}
                />
              </Box>
           ) : (

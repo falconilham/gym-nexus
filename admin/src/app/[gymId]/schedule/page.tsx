@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Client-side fetching for now
 interface ClassSession {
@@ -22,6 +23,7 @@ interface ClassSession {
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function SchedulePage() {
+  const { t } = useTranslation();
   const [classList, setClassList] = useState<ClassSession[]>([]);
 
   useEffect(() => {
@@ -42,8 +44,8 @@ export default function SchedulePage() {
       {/* Header */}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, justifyContent: 'space-between', gap: 2 }}>
         <Box>
-           <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>Class Schedule</Typography>
-           <Typography variant="body2" sx={{ color: '#9CA3AF', mt: 0.5 }}>Manage weekly timetables and trainer assignments.</Typography>
+           <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>{t('schedule.title')}</Typography>
+           <Typography variant="body2" sx={{ color: '#9CA3AF', mt: 0.5 }}>{t('schedule.subtitle')}</Typography>
         </Box>
         <Button 
             variant="contained"
@@ -60,7 +62,7 @@ export default function SchedulePage() {
             }}
         >
             <Plus size={20} />
-            Add Class
+            {t('schedule.add_btn')}
         </Button>
       </Box>
 
@@ -160,7 +162,7 @@ export default function SchedulePage() {
                             <Typography variant="body2" sx={{ fontWeight: 500 }}>{cls.booked}/{cls.capacity}</Typography>
                         </Box>
                          <Chip 
-                                label={cls.booked >= cls.capacity ? 'FULL' : 'OPEN'} 
+                                label={cls.booked >= cls.capacity ? t('schedule.full') : t('schedule.open')} 
                                 size="small"
                                 sx={{ 
                                     fontWeight: 'bold', 

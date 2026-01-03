@@ -37,8 +37,10 @@ app.get('/', (req, res) => {
 });
 
 const { seedDatabase } = require('./database');
+const { startSuspensionChecker } = require('./jobs/suspensionChecker');
 
 app.listen(PORT, async () => {
   await seedDatabase();
+  startSuspensionChecker();
   console.log(`Server running on port ${PORT}`);
 });

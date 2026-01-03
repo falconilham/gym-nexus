@@ -8,6 +8,7 @@ import { Search, User, Keyboard } from 'lucide-react';
 import axios from 'axios';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useTenantUrl } from '@/hooks/useTenantUrl';
+import { useTranslation } from 'react-i18next';
 
 interface ScanResult {
   type: 'success' | 'error' | 'warning';
@@ -17,7 +18,22 @@ interface ScanResult {
   reason?: string;
 }
 
+interface MemberSearchResult {
+  id: number;
+  userId: number;
+  gymId: number;
+  status: string;
+  memberPhoto?: string;
+  User?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    memberPhoto?: string;
+  };
+}
+
 export default function ScannerPage() {
+  const { t } = useTranslation();
   const { getUrl } = useTenantUrl();
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -29,9 +45,9 @@ export default function ScannerPage() {
   // Manual Check-in State
   const [showManual, setShowManual] = useState(false);
   const [manualSearch, setManualSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]); // Using any for member object flexibility
+  const [searchResults, setSearchResults] = useState<MemberSearchResult[]>([]);
   const [manualLoading, setManualLoading] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const [selectedMember, setSelectedMember] = useState<MemberSearchResult | null>(null);
 
   useEffect(() => {
     // Small delay to ensure DOM is ready
@@ -41,15 +57,17 @@ export default function ScannerPage() {
 
     return () => {
       clearTimeout(timer);
-      stopScanner();
+      // Cleanup function cannot be async, so we call the async function and handle promise
+      stopScanner().catch(err => console.error("Cleanup error:", err));
     };
+     
   }, []);
 
   const startScanner = async () => {
     try {
       if (scannerRef.current) {
         // Already running or not cleaned up
-        await stopScanner();
+        await stopScanner().catch(e => console.warn(e));
       }
 
       const html5QrCode = new Html5Qrcode("reader", { 
@@ -71,14 +89,14 @@ export default function ScannerPage() {
         (decodedText) => {
           handleScan(decodedText);
         },
-        (errorMessage) => {
+        () => {
           // ignore frames without QR
         }
       );
     } catch (err: unknown) {
       console.error('Camera error:', err);
       const error = err as { message?: string };
-      setCameraError(error.message || 'Unable to access camera');
+      setCameraError(error.message || t('check_in_page.unable_access_camera'));
       setIsScanning(false);
     }
   };
@@ -86,12 +104,17 @@ export default function ScannerPage() {
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
-        if (scannerRef.current.isScanning) {
-          await scannerRef.current.stop();
-        }
+        // Html5Qrcode.stop() returns a Promise. We must await it.
+        // We also check if it's scanning using the getState method or try/catch.
+        // There is no public isScanning property on Html5Qrcode instance in all versions, 
+        // but we can try to stop and catch "not running" errors.
+        await scannerRef.current.stop().catch(err => {
+            // Ignore "not running" errors
+            console.warn("Stop failed (likely not running):", err);
+        });
         scannerRef.current.clear();
       } catch (err) {
-        console.error('Error stopping scanner', err);
+        console.error('Error stopping scanner cleanup', err);
       }
       scannerRef.current = null;
     }
@@ -115,7 +138,7 @@ export default function ScannerPage() {
       let qrData;
       try {
         qrData = JSON.parse(data);
-      } catch (e) {
+      } catch {
         throw new Error('Invalid QR Data Format');
       }
 
@@ -124,8 +147,8 @@ export default function ScannerPage() {
       if (!userId || !gymId || !membershipId) {
         setScanResult({
           type: 'error',
-          message: 'Invalid QR Code',
-          memberInfo: 'QR code is missing required information',
+          message: t('check_in_page.invalid_qr'),
+          memberInfo: t('check_in_page.qr_missing_info'),
         });
         return;
       }
@@ -143,11 +166,11 @@ export default function ScannerPage() {
         
         setScanResult({
           type: 'success',
-          message: isCheckout ? 'Checked Out' : 'Access Granted',
+          message: isCheckout ? t('check_in_page.checked_out') : t('check_in_page.access_granted'),
           memberName: response.data.member.name,
           memberInfo: isCheckout 
-            ? 'Thank you for visiting!' 
-            : `${response.data.member.daysRemaining} days remaining`,
+            ? t('check_in_page.thank_you') 
+            : `${response.data.member.daysRemaining} ${t('check_in_page.days_remaining')}`,
         });
       }
     } catch (error: unknown) {
@@ -168,52 +191,52 @@ export default function ScannerPage() {
         if (reason === 'suspended') {
           setScanResult({
             type: 'error',
-            message: 'Access Denied',
-            memberName: member?.name || 'Member',
-            memberInfo: 'Membership Suspended',
-            reason: 'Please contact administration',
+            message: t('check_in_page.access_denied'),
+            memberName: member?.name || t('members.table.name'), // trying to use generic 'Member' or name header translation if 'Member' key not exist
+            memberInfo: t('check_in_page.membership_suspended'),
+            reason: t('check_in_page.contact_admin'),
           });
         } else if (reason === 'expired') {
           setScanResult({
             type: 'warning',
-            message: 'Access Denied',
-            memberName: member?.name || 'Member',
-            memberInfo: 'Membership Expired',
-            reason: 'Please renew your membership',
+            message: t('check_in_page.access_denied'),
+            memberName: member?.name || t('members.table.name'),
+            memberInfo: t('check_in_page.membership_expired'),
+            reason: t('check_in_page.renew_membership'),
           });
         } else if (reason === 'not_found') {
           setScanResult({
             type: 'error',
-            message: 'Access Denied',
-            memberInfo: 'Membership Not Found',
-            reason: 'Invalid membership for this gym',
+            message: t('check_in_page.access_denied'),
+            memberInfo: t('check_in_page.membership_not_found'),
+            reason: t('check_in_page.invalid_membership'),
           });
         } else if (reason === 'wrong_gym') {
           setScanResult({
             type: 'error',
-            message: 'Wrong Gym',
-            memberInfo: 'This QR code is for a different gym',
-            reason: 'Please use the correct gym\'s scanner',
+            message: t('check_in_page.wrong_gym'),
+            memberInfo: t('check_in_page.wrong_gym_info'),
+            reason: t('check_in_page.wrong_gym_reason'),
           });
         } else {
           setScanResult({
             type: 'error',
-            message: 'Access Denied',
-            memberInfo: message || 'Unknown error',
+            message: t('check_in_page.access_denied'),
+            memberInfo: message || t('common.error'), // fallback
           });
         }
       } else if (err.message === 'Invalid QR Data Format') {
          setScanResult({
             type: 'error',
-            message: 'Invalid QR Code',
-            memberInfo: 'Could not parse QR data',
+            message: t('check_in_page.invalid_qr'),
+            memberInfo: t('check_in_page.parse_error'),
          });
       } else {
         setScanResult({
           type: 'error',
-          message: 'System Error',
-          memberInfo: 'Unable to verify membership',
-          reason: 'Please try again',
+          message: t('check_in_page.system_error'),
+          memberInfo: t('check_in_page.verify_error_info'),
+          reason: t('check_in_page.try_again'),
         });
       }
     } finally {
@@ -261,7 +284,7 @@ export default function ScannerPage() {
               '&:hover': { color: 'white' } 
             }}
          >
-            Exit Kiosk Mode
+            {t('check_in_page.exit_kiosk')}
          </Button>
          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ 
@@ -281,7 +304,7 @@ export default function ScannerPage() {
               textTransform: 'uppercase', 
               letterSpacing: 2 
             }}>
-                {isScanning ? 'Camera Active' : 'Standby'}
+                {isScanning ? t('check_in_page.camera_active') : t('check_in_page.standby')}
             </Typography>
          </Box>
       </Box>
@@ -318,7 +341,7 @@ export default function ScannerPage() {
             {cameraError ? (
                 <Box sx={{ textAlign: 'center', p: 4, position: 'absolute', zIndex: 20 }}>
                      <Box sx={{ mb: 2 }}>⚠️</Box>
-                    <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>Camera Error</Typography>
+                    <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>{t('check_in_page.camera_error')}</Typography>
                     <Typography sx={{ color: '#9CA3AF', mb: 3 }}>{cameraError}</Typography>
                     <Button 
                       onClick={resetScan}
@@ -329,7 +352,7 @@ export default function ScannerPage() {
                         '&:hover': { backgroundColor: '#bbe300' }
                       }}
                     >
-                      Retry
+                      {t('check_in_page.retry')}
                     </Button>
                 </Box>
             ) : isProcessing ? (
@@ -347,7 +370,7 @@ export default function ScannerPage() {
                         '100%': { transform: 'rotate(360deg)' }
                       }
                     }} />
-                    <Typography sx={{ color: '#9CA3AF' }}>Verifying...</Typography>
+                    <Typography sx={{ color: '#9CA3AF' }}>{t('check_in_page.verifying')}</Typography>
                 </Box>
             ) : scanResult ? (
                // Result View
@@ -429,7 +452,7 @@ export default function ScannerPage() {
                     py: 2,
                     zIndex: 10
                   }}>
-                    Position QR Code within frame
+                    {t('check_in_page.position_qr')}
                   </Typography>
                 </>
              )}
@@ -463,7 +486,7 @@ export default function ScannerPage() {
                         '&:active': { transform: 'scale(0.98)' }
                     }}
                 >
-                    Scan Next Member
+                    {t('check_in_page.scan_next')}
                 </Button>
              )}
          </Box>
@@ -475,7 +498,7 @@ export default function ScannerPage() {
             GYM<Box component="span" sx={{ color: '#CCFF00' }}>NEXUS</Box>
          </Typography>
          <Typography variant="caption" sx={{ color: '#6B7280', textTransform: 'uppercase', letterSpacing: 4 }}>
-           Access Control Terminal 01
+           QR Check In
           </Typography>
           <Button
             onClick={() => setShowManual(true)}
@@ -488,7 +511,7 @@ export default function ScannerPage() {
                 '&:hover': { color: 'white', backgroundColor: 'transparent' } 
             }}
           >
-            Manual Check-In
+            {t('check_in_page.manual_check_in')}
           </Button>
        </Box>
 
@@ -572,7 +595,7 @@ export default function ScannerPage() {
                     {manualLoading ? (
                         <Typography sx={{ textAlign: 'center', color: '#6B7280', py: 2 }}>Searching...</Typography>
                     ) : searchResults.length > 0 ? (
-                        searchResults.map((member: any) => (
+                        searchResults.map((member) => (
                             <ListItem 
                                 key={member.id}
                                 secondaryAction={

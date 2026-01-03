@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import { 
     Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, 
-    Select, MenuItem, InputLabel, FormControl, Box, IconButton, Typography, Avatar 
+    Select, MenuItem, InputLabel, Box, IconButton, Typography, Avatar 
 } from '@mui/material';
 import axios from 'axios';
 
@@ -10,7 +10,7 @@ interface AddMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  gymId?: Number;
+  gymId?: number;
 }
 
 export default function AddMemberModal({ isOpen, onClose, onSuccess, gymId }: AddMemberModalProps) {

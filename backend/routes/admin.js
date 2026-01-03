@@ -8,9 +8,10 @@ const {
   Admin,
   Class,
   Equipment,
-  CheckIn,
   Trainer,
   Specialty,
+  ActivityLog,
+  CheckIn,
 } = require('../database');
 const { requireFeature } = require('../middleware/featureGuard');
 
@@ -45,8 +46,11 @@ router.post('/login', async (req, res) => {
 // Get Dashboard Stats
 router.get('/stats', requireFeature('dashboard'), async (req, res) => {
   try {
-    const totalMembers = await Member.count();
-    const activeMembers = await Member.count({ where: { status: 'Active' } });
+    const gymId = req.gymId || req.query.gymId;
+    if (!gymId) return res.status(400).json({ error: 'Gym ID required' });
+
+    const totalMembers = await Member.count({ where: { gymId } });
+    const activeMembers = await Member.count({ where: { gymId, status: 'Active' } });
 
     // Get today's check-ins (granted only)
     const today = new Date();
@@ -56,6 +60,7 @@ router.get('/stats', requireFeature('dashboard'), async (req, res) => {
 
     const dailyCheckIns = await CheckIn.count({
       where: {
+        gymId,
         status: 'granted',
         timestamp: {
           [Op.gte]: today,
@@ -155,7 +160,7 @@ router.put('/settings', requireFeature('settings'), upload.single('logoFile'), a
 });
 
 // Member Management
-// Member Management
+
 router.get('/members', requireFeature('members'), async (req, res) => {
   try {
     const gymId = req.gymId || req.query.gymId;
@@ -177,6 +182,18 @@ router.get('/members', requireFeature('members'), async (req, res) => {
       } else if (status === 'expired') {
         // Simple check for now, ideally check dates
         where.status = 'Expired';
+      } else if (status === 'expiring') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const nextWeek = new Date();
+        nextWeek.setDate(today.getDate() + 7);
+        nextWeek.setHours(23, 59, 59, 999);
+
+        where.status = 'Active';
+        where.endDate = {
+          [Op.between]: [today, nextWeek],
+        };
       }
     }
 
@@ -189,15 +206,23 @@ router.get('/members', requireFeature('members'), async (req, res) => {
     if (search) {
       includeUser.where = {
         [Op.or]: [
+          { name: { [Op.iLike]: `%${search}%` } },
           { email: { [Op.iLike]: `%${search}%` } },
           { phone: { [Op.iLike]: `%${search}%` } },
         ],
       };
     }
 
-    const members = await Member.findAll({
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: members } = await Member.findAndCountAll({
       where,
       include: [includeUser],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
     });
 
     // Flatten structure for frontend
@@ -207,6 +232,8 @@ router.get('/members', requireFeature('members'), async (req, res) => {
       userId: m.userId,
       status: m.status,
       suspended: m.suspended,
+      suspensionReason: m.suspensionReason,
+      suspensionEndDate: m.suspensionEndDate,
       joinDate: m.joinDate,
       endDate: m.endDate,
       duration: m.duration,
@@ -217,7 +244,17 @@ router.get('/members', requireFeature('members'), async (req, res) => {
       User: m.User, // Include full User object for edit modal
     }));
 
-    res.json(formattedMembers);
+    res.json({
+      data: formattedMembers,
+      pagination: {
+        total: count,
+        page,
+        totalPages: Math.ceil(count / limit),
+      },
+      // Keep flat array for backward compatibility if client doesn't handle object response yet
+      // However, we should move to object response. For now, let's return object.
+      // Frontend needs update.
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -275,6 +312,14 @@ router.post('/members', requireFeature('members'), async (req, res) => {
       duration,
     });
 
+    // Log Activity
+    await ActivityLog.create({
+      gymId,
+      adminName: 'Admin',
+      action: 'MEMBER_ADDED',
+      details: JSON.stringify({ name: user.name, email: user.email }),
+    });
+
     // Return combined data or just the membership
     // The frontend expects { name, email, ... } alongside id
     res.status(201).json({
@@ -292,6 +337,18 @@ router.delete('/members/:id', requireFeature('members'), async (req, res) => {
   try {
     const { id } = req.params;
     await Member.destroy({ where: { id } });
+
+    // Log Activity
+    const gymId = req.gymId || req.query.gymId;
+    if (gymId) {
+      await ActivityLog.create({
+        gymId,
+        adminName: 'Admin',
+        action: 'MEMBER_DELETED',
+        details: JSON.stringify({ memberId: id }),
+      });
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -309,12 +366,25 @@ router.put('/members/:id', requireFeature('members'), async (req, res) => {
     }
 
     // Update User info
+    const changes = [];
     const user = await User.findByPk(member.userId);
     if (user) {
-      if (name) user.name = name;
-      if (email) user.email = email;
-      if (phone !== undefined) user.phone = phone;
-      if (memberPhoto) user.memberPhoto = memberPhoto;
+      if (name && user.name !== name) {
+        changes.push(`Name: ${user.name} -> ${name}`);
+        user.name = name;
+      }
+      if (email && user.email !== email) {
+        changes.push(`Email: ${user.email} -> ${email}`);
+        user.email = email;
+      }
+      if (phone !== undefined && user.phone !== phone) {
+        changes.push(`Phone changed`);
+        user.phone = phone;
+      }
+      if (memberPhoto) {
+        changes.push(`Photo updated`);
+        user.memberPhoto = memberPhoto;
+      }
       await user.save();
     }
 
@@ -328,6 +398,7 @@ router.put('/members/:id', requireFeature('members'), async (req, res) => {
 
       member.endDate = currentEndDate.toISOString().split('T')[0];
       member.status = 'Active'; // Reactivate if expired
+      changes.push(`Extended by ${monthsToAdd} month(s)`);
     }
 
     await member.save();
@@ -339,6 +410,18 @@ router.put('/members/:id', requireFeature('members'), async (req, res) => {
       name: updatedUser ? updatedUser.name : '',
       email: updatedUser ? updatedUser.email : '',
     });
+
+    // Log Activity
+    await ActivityLog.create({
+      gymId: member.gymId,
+      adminName: 'Admin',
+      action: 'MEMBER_UPDATED',
+      details: JSON.stringify({
+        name: updatedUser?.name || 'Unknown',
+        memberId: id,
+        changes: changes.join(', '),
+      }),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -348,17 +431,31 @@ router.put('/members/:id', requireFeature('members'), async (req, res) => {
 router.patch('/members/:id/suspend', requireFeature('members'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { suspended } = req.body; // true or false
+    const { suspended, reason, endDate } = req.body; // true or false, + reason, + endDate
 
-    const member = await Member.findByPk(id);
+    const member = await Member.findByPk(id, { include: [{ model: User }] });
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
 
     member.suspended = suspended;
+    member.suspensionReason = suspended ? reason : null;
+    member.suspensionEndDate = suspended && endDate ? endDate : null;
     await member.save();
 
     res.json(member);
+
+    // Log Activity
+    await ActivityLog.create({
+      gymId: member.gymId,
+      adminName: 'Admin',
+      action: suspended ? 'MEMBER_SUSPENDED' : 'MEMBER_ACTIVATED',
+      details: JSON.stringify({
+        name: member.User?.name || member.id,
+        status: suspended ? 'Suspended' : 'Active',
+        reason: reason || 'No reason provided',
+      }),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -367,8 +464,137 @@ router.patch('/members/:id/suspend', requireFeature('members'), async (req, res)
 // Equipment Management
 router.get('/equipment', requireFeature('settings'), async (req, res) => {
   try {
-    const equipment = await Equipment.findAll();
+    const gymId = req.gymId || req.query.gymId;
+    if (!gymId) return res.status(400).json({ error: 'Gym context required' });
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: equipment } = await Equipment.findAndCountAll({
+      where: { gymId },
+      limit,
+      offset,
+      order: [['name', 'ASC']],
+    });
+
+    res.json({
+      data: equipment,
+      pagination: {
+        total: count,
+        page,
+        totalPages: Math.ceil(count / limit),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/equipment', requireFeature('settings'), async (req, res) => {
+  try {
+    const gymId = req.gymId || req.body.gymId;
+    if (!gymId) return res.status(400).json({ error: 'Gym ID required' });
+
+    const { name, brand, category, status } = req.body;
+    if (!name) return res.status(400).json({ error: 'Equipment name is required' });
+
+    const equipment = await Equipment.create({
+      gymId,
+      name,
+      brand: brand || null,
+      category: category || 'General',
+      status: status || 'Active',
+    });
+
+    await ActivityLog.create({
+      gymId,
+      adminName: 'Admin',
+      action: 'EQUIPMENT_ADDED',
+      details: JSON.stringify({
+        name: equipment.name,
+        brand: equipment.brand,
+        category: equipment.category,
+      }),
+    });
+
+    res.status(201).json(equipment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/equipment/:id', requireFeature('settings'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, brand, category, status } = req.body;
+
+    const equipment = await Equipment.findByPk(id);
+    if (!equipment) return res.status(404).json({ error: 'Equipment not found' });
+
+    const changes = [];
+    if (name && equipment.name !== name) {
+      changes.push(`Name: ${equipment.name} -> ${name}`);
+      equipment.name = name;
+    }
+    if (brand !== undefined && equipment.brand !== brand) {
+      changes.push(`Brand: ${equipment.brand} -> ${brand}`);
+      equipment.brand = brand;
+    }
+    if (category && equipment.category !== category) {
+      changes.push(`Category: ${equipment.category} -> ${category}`);
+      equipment.category = category;
+    }
+    if (status && equipment.status !== status) {
+      changes.push(`Status: ${equipment.status} -> ${status}`);
+      equipment.status = status;
+    }
+
+    await equipment.save();
+
+    if (changes.length > 0) {
+      await ActivityLog.create({
+        gymId: equipment.gymId,
+        adminName: 'Admin',
+        action: 'EQUIPMENT_UPDATED',
+        details: JSON.stringify({
+          name: equipment.name,
+          brand: equipment.brand,
+          changes: changes.join(', '),
+        }),
+      });
+    }
+
     res.json(equipment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/equipment/:id', requireFeature('settings'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const equipment = await Equipment.findByPk(id);
+    if (!equipment) return res.status(404).json({ error: 'Equipment not found' });
+
+    const gymId = equipment.gymId;
+    const name = equipment.name;
+
+    await equipment.destroy();
+
+    await ActivityLog.create({
+      gymId,
+      adminName: 'Admin',
+      action: 'EQUIPMENT_DELETED',
+      details: JSON.stringify({
+        name: equipment.name,
+        brand: equipment.brand,
+        category: equipment.category,
+        equipmentId: id,
+      }),
+    });
+
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -518,6 +744,14 @@ router.post('/check-in', async (req, res) => {
       activeSession.checkOutTime = new Date();
       await activeSession.save();
 
+      // Log Activity
+      await ActivityLog.create({
+        gymId,
+        adminName: 'Scanner System',
+        action: 'MEMBER_CHECK_OUT',
+        details: JSON.stringify({ name: user.name, memberId: membershipId }),
+      });
+
       return res.json({
         success: true,
         access: 'granted',
@@ -540,6 +774,14 @@ router.post('/check-in', async (req, res) => {
         memberName: user.name,
         status: 'granted',
         reason: null,
+      });
+
+      // Log Activity
+      await ActivityLog.create({
+        gymId,
+        adminName: 'Scanner System',
+        action: 'MEMBER_CHECK_IN',
+        details: JSON.stringify({ name: user.name, memberId: membershipId }),
       });
 
       return res.json({
@@ -615,7 +857,10 @@ router.get('/trainers', requireFeature('trainers'), async (req, res) => {
     const where = { gymId };
 
     if (search) {
-      where.name = { [Op.iLike]: `%${search}%` };
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { specialty: { [Op.iLike]: `%${search}%` } },
+      ];
     }
 
     // Client sends 'All' for no category
@@ -631,12 +876,25 @@ router.get('/trainers', requireFeature('trainers'), async (req, res) => {
       where.singleSessionPrice = { [Op.lte]: parseFloat(maxPrice) };
     }
 
-    const trainers = await Trainer.findAll({
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: trainers } = await Trainer.findAndCountAll({
       where,
       order: [['name', 'ASC']],
+      limit,
+      offset,
     });
 
-    res.json(trainers);
+    res.json({
+      data: trainers,
+      pagination: {
+        total: count,
+        page,
+        totalPages: Math.ceil(count / limit),
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -711,6 +969,14 @@ router.post('/trainers', requireFeature('trainers'), async (req, res) => {
       image: image || null,
     });
 
+    // Log Activity
+    await ActivityLog.create({
+      gymId,
+      adminName: 'Admin',
+      action: 'TRAINER_ADDED',
+      details: JSON.stringify({ name: trainer.name, specialty: trainer.specialty }),
+    });
+
     res.status(201).json(trainer);
   } catch (err) {
     console.error('Error creating trainer:', err);
@@ -731,15 +997,45 @@ router.put('/trainers/:id', async (req, res) => {
     }
 
     // Update fields
-    if (name !== undefined) trainer.name = name;
-    if (specialty !== undefined) trainer.specialty = specialty;
-    if (rating !== undefined) trainer.rating = rating;
-    if (singleSessionPrice !== undefined) trainer.singleSessionPrice = singleSessionPrice;
+    const changes = [];
+    if (name !== undefined) {
+      if (trainer.name !== name) changes.push(`Name: ${trainer.name} -> ${name}`);
+      trainer.name = name;
+    }
+    if (specialty !== undefined) {
+      if (trainer.specialty !== specialty)
+        changes.push(`Specialty: ${trainer.specialty} -> ${specialty}`);
+      trainer.specialty = specialty;
+    }
+    if (rating !== undefined) {
+      if (trainer.rating !== parseFloat(rating))
+        changes.push(`Rating: ${trainer.rating} -> ${rating}`);
+      trainer.rating = rating;
+    }
+    if (singleSessionPrice !== undefined) {
+      if (trainer.singleSessionPrice !== parseFloat(singleSessionPrice))
+        changes.push(`Price: ${trainer.singleSessionPrice} -> ${singleSessionPrice}`);
+      trainer.singleSessionPrice = singleSessionPrice;
+    }
     if (packagePrice !== undefined) trainer.packagePrice = packagePrice;
     if (packageCount !== undefined) trainer.packageCount = packageCount;
-    if (image !== undefined) trainer.image = image;
+    if (image !== undefined) {
+      changes.push('Image updated');
+      trainer.image = image;
+    }
 
     await trainer.save();
+
+    // Log Activity (changes array is now populated)
+    const changesStr = changes.join(', ');
+
+    await ActivityLog.create({
+      gymId: trainer.gymId,
+      adminName: 'Admin',
+      action: 'TRAINER_UPDATED',
+      details: JSON.stringify({ name: trainer.name, trainerId: id, changes: changesStr }),
+    });
+
     res.json(trainer);
   } catch (err) {
     console.error('Error updating trainer:', err);
@@ -748,6 +1044,36 @@ router.put('/trainers/:id', async (req, res) => {
 });
 
 // Delete a trainer
+// Suspend Trainer
+router.patch('/trainers/:id/suspend', requireFeature('trainers'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { suspended, reason } = req.body;
+    const trainer = await Trainer.findByPk(id);
+
+    if (!trainer) return res.status(404).json({ error: 'Trainer not found' });
+
+    trainer.suspended = suspended;
+    trainer.suspensionReason = suspended ? reason : null; // Save or Clear reason
+    await trainer.save();
+
+    await ActivityLog.create({
+      gymId: trainer.gymId,
+      adminName: 'Admin',
+      action: suspended ? 'TRAINER_SUSPENDED' : 'TRAINER_ACTIVATED',
+      details: JSON.stringify({
+        name: trainer.name,
+        status: suspended ? 'Suspended' : 'Active',
+        reason: reason || 'No reason provided',
+      }),
+    });
+
+    res.json(trainer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/trainers/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -758,6 +1084,15 @@ router.delete('/trainers/:id', async (req, res) => {
     }
 
     await trainer.destroy();
+
+    // Log Activity
+    await ActivityLog.create({
+      gymId: trainer.gymId,
+      adminName: 'Admin',
+      action: 'TRAINER_DELETED',
+      details: JSON.stringify({ name: trainer.name, trainerId: id }),
+    });
+
     res.json({ success: true, message: 'Trainer deleted successfully' });
   } catch (err) {
     console.error('Error deleting trainer:', err);
@@ -840,6 +1175,57 @@ router.get('/members/expiring', requireFeature('dashboard'), async (req, res) =>
     });
 
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Activity Logs
+router.get('/activity-logs', requireFeature('settings'), async (req, res) => {
+  try {
+    const gymId = req.gymId || req.query.gymId;
+    const { type, date } = req.query;
+    if (!gymId) return res.status(400).json({ error: 'Gym ID required' });
+
+    const where = { gymId };
+    if (type && type !== 'all') {
+      // Logic for type filtering
+      if (type === 'member')
+        where.action = { [Op.or]: [{ [Op.iLike]: 'MEMBER%' }, { [Op.iLike]: 'CHECK_IN' }] };
+      else if (type === 'trainer') where.action = { [Op.iLike]: 'TRAINER%' };
+      else if (type === 'equipment') where.action = { [Op.iLike]: 'EQUIPMENT%' };
+      else where.action = { [Op.iLike]: `${type}%` };
+    }
+
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      where.timestamp = {
+        [Op.between]: [startOfDay, endOfDay],
+      };
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: logs } = await ActivityLog.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['timestamp', 'DESC']],
+    });
+
+    res.json({
+      data: logs,
+      pagination: {
+        total: count,
+        page,
+        totalPages: Math.ceil(count / limit),
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

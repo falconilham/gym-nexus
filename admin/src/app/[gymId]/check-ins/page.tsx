@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, Filter } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
-    Button, Box, Typography, Chip, Avatar, TextField, InputAdornment
+    Button, Box, Typography, Chip, Avatar, TextField
 } from '@mui/material';
-import { Calendar } from 'lucide-react';
 import axios from 'axios';
 
 interface CheckIn {

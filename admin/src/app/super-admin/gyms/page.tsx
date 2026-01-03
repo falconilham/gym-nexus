@@ -57,7 +57,7 @@ export default function SuperAdminPage() {
     adminName: '',
     adminEmail: '',
     adminPassword: '',
-    features: ['dashboard', 'members', 'trainers', 'schedule', 'settings'],
+    features: ['dashboard', 'members', 'trainers', 'schedule', 'settings', 'activity', 'check_in'],
   });
 
   // Search & Filter State
@@ -77,7 +77,7 @@ export default function SuperAdminPage() {
     setAnchorEl(null);
   };
 
-  const AVAILABLE_FEATURES = ['dashboard', 'members', 'trainers', 'schedule', 'settings'];
+  const AVAILABLE_FEATURES = ['dashboard', 'members', 'trainers', 'schedule', 'settings', 'activity', 'check_in'];
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -121,7 +121,7 @@ export default function SuperAdminPage() {
       adminName: '', // Not editable here
       adminEmail: '', // Not editable here
       adminPassword: '', // Not editable here
-      features: gym.features || ['dashboard', 'members', 'trainers', 'schedule', 'settings'],
+      features: gym.features || ['dashboard', 'members', 'trainers', 'schedule', 'settings', 'activity', 'check_in'],
     });
     setAddGymOpen(true);
   };
@@ -154,7 +154,7 @@ export default function SuperAdminPage() {
         adminName: '',
         adminEmail: '',
         adminPassword: '',
-        features: ['dashboard', 'members', 'trainers', 'schedule', 'settings'],
+        features: ['dashboard', 'members', 'trainers', 'schedule', 'settings', 'activity', 'check_in'],
       });
       fetchData();
     } catch (error: unknown) {
@@ -491,6 +491,7 @@ export default function SuperAdminPage() {
             adminName: '',
             adminEmail: '',
             adminPassword: '',
+            features: ['dashboard', 'members', 'trainers', 'schedule', 'settings'],
           });
         }} 
         maxWidth="md" 
@@ -655,7 +656,7 @@ export default function SuperAdminPage() {
                             }
                             label={
                                 <Typography sx={{ color: 'white', textTransform: 'capitalize' }}>
-                                    {feature}
+                                    {feature.replace(/_/g, ' ')}
                                 </Typography>
                             }
                             sx={{ mr: 3 }}
@@ -681,6 +682,7 @@ export default function SuperAdminPage() {
               adminName: '',
               adminEmail: '',
               adminPassword: '',
+              features: ['dashboard', 'members', 'trainers', 'schedule', 'settings', 'activity', 'check_in'],
             });
           }} sx={{ color: '#9CA3AF' }}>
             Cancel

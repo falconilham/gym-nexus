@@ -3,12 +3,16 @@
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
-import { Box } from "@mui/material";
-import axios from 'axios';
+import { Box, IconButton, useMediaQuery, useTheme } from "@mui/material";
+import { Menu as MenuIcon } from 'lucide-react';
 
 import { GymProvider, useGym } from '@/context/GymContext';
 import GymNotFound from '@/components/GymNotFound';
 import '@/i18n';
+import axios from 'axios';
+
+// Bypass Ngrok warning page for API calls
+axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
 
 import createCache from '@emotion/cache';
 import { useServerInsertedHTML } from 'next/navigation';
@@ -30,22 +34,23 @@ function InnerLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { isNotFound, gym } = useGym();
+  const { isNotFound } = useGym();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  
+  // Initialize as true to match server-side rendering, then update on client
   const [isRootDomain, setIsRootDomain] = useState(true);
-
+  
   useEffect(() => {
-    // Determine if we are on the root domain or a subdomain
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').split(':')[0];
-      
-      const isRoot = 
-        hostname === rootDomain || 
-        hostname === `www.${rootDomain}` || 
-        hostname === 'gym-nexus.vercel.app';
-
-      setIsRootDomain(isRoot);
-    }
+    const hostname = window.location.hostname;
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').split(':')[0];
+    
+    const isRoot = hostname === rootDomain || 
+           hostname === `www.${rootDomain}` || 
+           hostname === 'gym-nexus.vercel.app';
+    
+    setTimeout(() => setIsRootDomain(isRoot), 0);
   }, []);
   
   // Hide sidebar on:
@@ -86,7 +91,8 @@ function InnerLayout({
 
   return (
     <Box sx={{ 
-      display: 'flex', 
+      display: 'flex',
+      flexDirection: 'column',
       minHeight: '100vh', 
       backgroundColor: '#050505',
       '& input:-webkit-autofill': {
@@ -95,9 +101,44 @@ function InnerLayout({
         transition: 'background-color 5000s ease-in-out 0s',
       }
     }}>
-      <Sidebar />
-      <Box component="main" sx={{ flex: 1, p: 4, backgroundColor: '#050505', position: 'relative' }}>
-        {children}
+      {/* Mobile Header */}
+      {isMobile && (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          p: 2,
+          backgroundColor: '#0A0A0A',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+        }}>
+          <IconButton
+            onClick={() => setMobileOpen(!mobileOpen)}
+            sx={{
+              color: 'var(--primary)',
+              border: '1px solid rgba(204, 255, 0, 0.2)',
+              '&:hover': {
+                backgroundColor: 'rgba(204, 255, 0, 0.1)',
+                borderColor: 'var(--primary)',
+              },
+            }}
+          >
+            <MenuIcon size={24} />
+          </IconButton>
+        </Box>
+      )}
+
+      {/* Main Content Area */}
+      <Box sx={{ display: 'flex', flex: 1 }}>
+        <Sidebar mobileOpen={mobileOpen} onMobileToggle={() => setMobileOpen(!mobileOpen)} />
+        <Box component="main" sx={{ 
+          flex: 1, 
+          p: { xs: 2, sm: 3, md: 4 }, 
+          backgroundColor: '#050505', 
+          position: 'relative',
+          width: { xs: '100%', md: 'auto' },
+          overflow: 'auto'
+        }}>
+          {children}
+        </Box>
       </Box>
     </Box>
   );
@@ -134,7 +175,6 @@ export default function ClientLayout({
       return null;
     }
     let styles = '';
-    // eslint-disable-next-line
     for (const name of names) {
       styles += cache.inserted[name];
     }

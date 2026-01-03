@@ -3,14 +3,24 @@
 import { useState, useEffect } from 'react';
 import { 
     Box, Typography, Paper, TextField, Button, Grid, 
-    Divider, Alert, CircularProgress, InputAdornment 
+    Alert, CircularProgress, ToggleButton, ToggleButtonGroup
 } from '@mui/material';
-import { Save, RefreshCw, Palette, Image as ImageIcon } from 'lucide-react';
+import { Save, RefreshCw, Palette, Image as ImageIcon, Globe, Phone } from 'lucide-react';
 import axios from 'axios';
-import { useAuth } from '@/hooks/useAuth';
+import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
-    const { admin } = useAuth();
+    const { t, i18n } = useTranslation();
+    const [currentLang, setCurrentLang] = useState(i18n.language || 'en');
+
+    const changeLanguage = (event: React.MouseEvent<HTMLElement>, newLang: string) => {
+        if (newLang !== null) {
+            i18n.changeLanguage(newLang);
+            setCurrentLang(newLang);
+        }
+    };
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -18,6 +28,7 @@ export default function SettingsPage() {
 
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>('');
+    const [imageError, setImageError] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -33,6 +44,7 @@ export default function SettingsPage() {
 
     useEffect(() => {
         fetchSettings();
+         
     }, []);
 
     const fetchSettings = async () => {
@@ -63,6 +75,7 @@ export default function SettingsPage() {
             const file = e.target.files[0];
             setLogoFile(file);
             setPreviewUrl(URL.createObjectURL(file));
+            setImageError(false);
         }
     };
 
@@ -102,7 +115,7 @@ export default function SettingsPage() {
             });
             if (updatedData.logo) setPreviewUrl(updatedData.logo);
             setLogoFile(null);
-            setSuccess('Settings saved successfully!');
+            setSuccess(t('settings.success'));
         } catch (err: unknown) {
             console.error('Error saving settings:', err);
             setError('Failed to save settings.');
@@ -120,26 +133,12 @@ export default function SettingsPage() {
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white', mb: 1 }}>
-                        Gym Settings
+                        {t('settings.title')}
                     </Typography>
                     <Typography variant="body1" sx={{ color: '#9CA3AF' }}>
-                        Customize your gym&apos;s appearance and contact info
+                        {t('settings.subtitle')}
                     </Typography>
                 </Box>
-                <Button 
-                    variant="contained" 
-                    startIcon={saving ? <RefreshCw className="animate-spin" /> : <Save />}
-                    onClick={handleSave}
-                    disabled={saving}
-                    sx={{
-                        backgroundColor: 'var(--primary)',
-                        color: 'black',
-                        fontWeight: 'bold',
-                        '&:hover': { backgroundColor: '#bbe300' }
-                    }}
-                >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
             </Box>
 
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
@@ -151,12 +150,12 @@ export default function SettingsPage() {
                     <Paper sx={{ p: 3, backgroundColor: '#1E1E1E', border: '1px solid #333' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
                             <Palette size={20} color="var(--primary)" />
-                            <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Branding</Typography>
+                            <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>{t('settings.branding')}</Typography>
                         </Box>
                         
                         <Grid container spacing={3} alignItems="flex-start">
                             <Grid size={{ xs: 12, md: 3 }}>
-                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>Gym Name</Typography>
+                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>{t('settings.gym_name')}</Typography>
                                 <TextField
                                     fullWidth
                                     value={formData.name}
@@ -172,40 +171,66 @@ export default function SettingsPage() {
                             </Grid>
                             
                             <Grid size={{ xs: 12, md: 3 }}>
-                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>Logo</Typography>
-                                <Button
-                                    variant="outlined"
-                                    component="label"
-                                    fullWidth
-                                    startIcon={<ImageIcon size={18} />}
-                                    sx={{ 
-                                        color: 'white', 
-                                        borderColor: '#333',
-                                        height: 48,
-                                        justifyContent: 'flex-start',
-                                        textTransform: 'none',
-                                        '&:hover': { borderColor: '#666', backgroundColor: 'rgba(255,255,255,0.05)' } 
-                                    }}
-                                >
-                                    <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {logoFile ? logoFile.name : 'Upload Logo'}
-                                    </Box>
-                                    <input
-                                        type="file"
-                                        hidden
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                    />
-                                </Button>
-                                {previewUrl && (
-                                    <Box sx={{ mt: 2, p: 1, border: '1px dashed #444', borderRadius: 1, display: 'inline-block', backgroundColor: '#000' }}>
-                                        <img src={previewUrl} alt="Preview" style={{ height: 60, maxWidth: '100%', objectFit: 'contain' }} />
-                                    </Box>
-                                )}
+                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>{t('settings.logo')}</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    {(previewUrl && !imageError) ? (
+                                        <Box sx={{ 
+                                            width: 48, 
+                                            height: 48, 
+                                            borderRadius: 2, 
+                                            overflow: 'hidden', 
+                                            backgroundColor: 'rgba(255,255,255,0.05)',
+                                            border: '1px solid #333',
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            flexShrink: 0
+                                        }}>
+                                            <Image 
+                                                src={previewUrl} 
+                                                alt="Preview" 
+                                                width={40} 
+                                                height={40} 
+                                                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                                onError={() => setImageError(true)}
+                                            />
+                                        </Box>
+                                    ) : (
+                                        <Box sx={{ width: 48, height: 48, borderRadius: 2, backgroundColor: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <ImageIcon size={20} color="#666" />
+                                        </Box>
+                                    )}
+                                    <Button
+                                        variant="outlined"
+                                        component="label"
+                                        fullWidth
+                                        startIcon={<ImageIcon size={18} />}
+                                        sx={{ 
+                                            color: 'white', 
+                                            borderColor: '#333',
+                                            height: 48,
+                                            flex: 1,
+                                            textTransform: 'none',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            '&:hover': { borderColor: '#666', backgroundColor: 'rgba(255,255,255,0.05)' } 
+                                        }}
+                                    >
+                                        <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {logoFile ? logoFile.name : t('settings.upload_logo')}
+                                        </Box>
+                                        <input
+                                            type="file"
+                                            hidden
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                        />
+                                    </Button>
+                                </Box>
                             </Grid>
 
                             <Grid size={{ xs: 12, md: 3 }}>
-                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>Primary Color</Typography>
+                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>{t('settings.primary_color')}</Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <input 
                                         type="color" 
@@ -228,7 +253,7 @@ export default function SettingsPage() {
                             </Grid>
 
                             <Grid size={{ xs: 12, md: 3 }}>
-                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>Secondary Color</Typography>
+                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>{t('settings.secondary_color')}</Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <input 
                                         type="color" 
@@ -255,16 +280,17 @@ export default function SettingsPage() {
 
                 {/* Contact Info Section */}
                 <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 3, backgroundColor: '#1E1E1E', border: '1px solid #333' }}>
+                    <Paper sx={{ p: 3, backgroundColor: '#1E1E1E', border: '1px solid #333', height: '100%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
-                            <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Contact Info</Typography>
+                            <Phone size={20} color="var(--primary)" />
+                            <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>{t('settings.contact_info')}</Typography>
                         </Box>
                         
                         <Grid container spacing={3}>
                             <Grid size={{ xs: 12 }}>
                                 <TextField
                                     fullWidth
-                                    label="Address"
+                                    label={t('settings.address')}
                                     value={formData.address}
                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                     multiline
@@ -279,7 +305,7 @@ export default function SettingsPage() {
                             <Grid size={{ xs: 12 }}>
                                 <TextField
                                     fullWidth
-                                    label="Phone"
+                                    label={t('settings.phone')}
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                     sx={{ 
@@ -292,7 +318,7 @@ export default function SettingsPage() {
                             <Grid size={{ xs: 12 }}>
                                 <TextField
                                     fullWidth
-                                    label="Email"
+                                    label={t('settings.email')}
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     sx={{ 
@@ -304,7 +330,74 @@ export default function SettingsPage() {
                         </Grid>
                     </Paper>
                 </Grid>
+
+                {/* Preferences Section */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 3, backgroundColor: '#1E1E1E', border: '1px solid #333', height: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
+                            <Globe size={20} color="var(--primary)" />
+                            <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>{t('settings.preferences')}</Typography>
+                        </Box>
+                        
+                        <Grid container spacing={3}>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <Typography variant="caption" sx={{ color: '#9CA3AF', mb: 1, display: 'block' }}>{t('settings.language')}</Typography>
+                                <ToggleButtonGroup
+                                    value={currentLang}
+                                    exclusive
+                                    onChange={changeLanguage}
+                                    aria-label="language selector"
+                                    size="small"
+                                    sx={{
+                                        '& .MuiToggleButton-root': {
+                                            color: '#6B7280',
+                                            borderColor: '#333',
+                                            fontSize: '0.875rem',
+                                            fontWeight: 600,
+                                            px: 3,
+                                            py: 1,
+                                            '&.Mui-selected': {
+                                                color: 'black !important',
+                                                backgroundColor: 'var(--primary) !important',
+                                                '&:hover': { backgroundColor: '#bbe300 !important' }
+                                            },
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                                color: 'white'
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <ToggleButton value="en">English</ToggleButton>
+                                    <ToggleButton value="id">Indonesia</ToggleButton>
+                                </ToggleButtonGroup>
+                            </Grid>
+                        </Grid>
+                    </Paper>
+                </Grid>
             </Grid>
+
+            {/* Save Button */}
+            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button 
+                    variant="contained" 
+                    size="large"
+                    startIcon={saving ? <RefreshCw className="animate-spin" /> : <Save />}
+                    onClick={handleSave}
+                    disabled={saving}
+                    sx={{
+                        backgroundColor: 'var(--primary)',
+                        color: 'black',
+                        fontWeight: 'bold',
+                        px: 4,
+                        py: 1.5,
+                        fontSize: '1rem',
+                        '&:hover': { backgroundColor: '#bbe300' }
+                    }}
+                >
+                    {saving ? t('settings.saving') : t('settings.save_btn')}
+                </Button>
+            </Box>
         </Box>
     );
 }

@@ -59,6 +59,7 @@ export default function SpecialtyManager({ open, onClose, onUpdate }: SpecialtyM
     if (open) {
       fetchSpecialties();
     }
+     
   }, [open, gymId]);
 
   const handleAdd = async () => {
@@ -71,8 +72,9 @@ export default function SpecialtyManager({ open, onClose, onUpdate }: SpecialtyM
       setNewSpecialty('');
       fetchSpecialties();
       onUpdate();
-    } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to add specialty');
+    } catch (err: unknown) {
+        const error = err as { response?: { data?: { error?: string } } };
+        setError(error.response?.data?.error || 'Failed to add specialty');
     }
   };
 

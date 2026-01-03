@@ -40,10 +40,13 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
   const [photoPreview, setPhotoPreview] = useState<string>('');
 
   useEffect(() => {
-    if (member) {
-        const phone = member.User?.phone || member.phone || '';
-        const memberPhoto = member.User?.memberPhoto || member.memberPhoto || '';
-        
+    if (!member) return;
+    
+    const phone = member.User?.phone || member.phone || '';
+    const memberPhoto = member.User?.memberPhoto || member.memberPhoto || '';
+    
+    // Initialize form data from member prop
+    const initializeFormData = () => {
         setFormData({
             name: member.name,
             email: member.email,
@@ -53,7 +56,9 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
         });
         setPhotoPreview(memberPhoto);
         setExtendMode(false);
-    }
+    };
+    
+    initializeFormData();
   }, [member]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
