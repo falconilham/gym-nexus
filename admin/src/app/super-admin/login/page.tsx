@@ -32,7 +32,7 @@ export default function SuperAdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/admin/login`, {
+      const response = await axios.post(`${API_URL}/api/super-admin/login`, {
         email,
         password,
       });

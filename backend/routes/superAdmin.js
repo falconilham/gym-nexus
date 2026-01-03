@@ -7,6 +7,53 @@ const { Op } = require('sequelize');
 // SUPER ADMIN ROUTES
 // ============================================
 
+// Super Admin Login
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Find admin by email
+    const admin = await Admin.findOne({ where: { email } });
+
+    if (!admin) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Check if user is a super admin
+    if (admin.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Access denied. Super admin privileges required.' });
+    }
+
+    // Verify password
+    const isValidPassword = await admin.validPassword(password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Check if account is active
+    if (admin.status !== 'active') {
+      return res.status(403).json({ error: 'Account is inactive. Please contact support.' });
+    }
+
+    res.json({
+      success: true,
+      admin: {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+  } catch (err) {
+    console.error('Super admin login error:', err);
+    res.status(500).json({ error: 'Login failed. Please try again.' });
+  }
+});
+
 // Get all gyms with stats
 router.get('/gyms', async (req, res) => {
   try {
