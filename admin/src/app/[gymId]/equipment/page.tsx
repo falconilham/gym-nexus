@@ -50,7 +50,7 @@ export default function EquipmentPage() {
   // Fetch logic wrapped for reuse
   const fetchEquipment = async () => {
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
             const res = await axios.get(`${API_URL}/api/admin/equipment`, {
                 params: {
                     gymId,
@@ -100,7 +100,7 @@ export default function EquipmentPage() {
 
   const handleSubmit = async () => {
       if (!gymId) return;
-      const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
       
       try {
           if (editingItem) {
@@ -117,7 +117,7 @@ export default function EquipmentPage() {
 
   const handleDelete = async (id: number) => {
       if (!confirm('Are you sure you want to delete this equipment?')) return;
-      const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
       try {
           await axios.delete(`${API_URL}/api/admin/equipment/${id}`);
           fetchEquipment();

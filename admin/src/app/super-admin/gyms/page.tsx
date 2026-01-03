@@ -79,7 +79,7 @@ export default function SuperAdminPage() {
 
   const AVAILABLE_FEATURES = ['dashboard', 'members', 'trainers', 'schedule', 'settings', 'activity', 'check_in'];
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
 
   const fetchData = useCallback(async () => {
     try {

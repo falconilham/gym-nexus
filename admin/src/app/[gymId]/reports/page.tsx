@@ -15,7 +15,7 @@ export default function ReportsPage() {
     useEffect(() => {
         const fetch = async () => {
             try {
-               const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+               const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
                const res = await axios.get(`${API_URL}/api/admin/reports/peak-hours`);
                setPeakData(res.data.hourCounts);
             } catch(e) { console.error(e); }

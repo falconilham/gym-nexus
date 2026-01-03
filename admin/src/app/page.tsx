@@ -8,7 +8,7 @@ import { Dumbbell, BarChart3, Users, QrCode, ShieldCheck, LayoutDashboard, Zap, 
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN!;
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gym-nexus-admin.vercel.app';
 const PROTOCOL = process.env.NODE_ENV === 'development' ? 'http' : 'https';
 
 const getSubdomainUrl = (subdomain: string) => {
@@ -46,13 +46,23 @@ export default function LandingPage() {
       setCurrentLang(i18n.language);
     }, 0);
     
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL!}/api/super-admin/gyms`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    
+    if (!apiUrl) {
+      console.error('❌ NEXT_PUBLIC_API_URL is not set. Please configure environment variables in Vercel.');
+      return;
+    }
+    
+    axios.get(`${apiUrl}/api/super-admin/gyms`, {
       headers: {
         "ngrok-skip-browser-warning": "true"
       }
     })
         .then(res => setGyms(res.data))
-        .catch(err => console.error(err));
+        .catch(err => {
+          console.error('Failed to fetch gyms:', err);
+          console.error('API URL:', apiUrl);
+        });
 
     const handleScroll = () => {
         setIsScrolled(window.scrollY > 50);

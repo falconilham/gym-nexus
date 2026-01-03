@@ -22,7 +22,7 @@ export default function middleware(req: NextRequest) {
   // You can set this via environment variable, e.g. NEXT_PUBLIC_ROOT_DOMAIN
   // Default to localhost:3000 if not set.
   // Note: removing port for cleaner subdomain extraction logic might be needed
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN!;
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gym-nexus-admin.vercel.app';
   
   // Check if the current hostname is the root domain or www
   // We need to handle port presence logic broadly.

@@ -154,7 +154,7 @@ export default function ScannerPage() {
       }
 
       // Call check-in API
-      const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
       const response = await axios.post(`${API_URL}/api/admin/check-in`, { 
         userId, 
         gymId, 
@@ -557,7 +557,7 @@ export default function ScannerPage() {
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 setManualLoading(true);
-                                const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+                                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
                                 axios.get(`${API_URL}/api/admin/members`, { params: { search: manualSearch } })
                                     .then(res => {
                                         setSearchResults(res.data);
@@ -574,7 +574,7 @@ export default function ScannerPage() {
                         variant="contained" 
                         onClick={() => {
                             setManualLoading(true);
-                            const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+                            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
                             axios.get(`${API_URL}/api/admin/members`, { params: { search: manualSearch } })
                                 .then(res => {
                                     setSearchResults(res.data);

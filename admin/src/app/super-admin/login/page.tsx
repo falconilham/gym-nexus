@@ -24,7 +24,7 @@ export default function SuperAdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

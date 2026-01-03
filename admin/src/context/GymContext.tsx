@@ -36,7 +36,7 @@ export const GymProvider = ({ children }: { children: ReactNode }) => {
             if (typeof window === 'undefined') return;
 
             const hostname = window.location.hostname;
-            const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN!).split(':')[0];
+            const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gym-nexus-admin.vercel.app').split(':')[0];
             
             // Check if root domain or vercel app (no subdomain logic for them usually, or defaults)
             if (hostname === rootDomain || hostname === `www.${rootDomain}` || hostname === 'gym-nexus.vercel.app') {
@@ -45,7 +45,7 @@ export const GymProvider = ({ children }: { children: ReactNode }) => {
             }
 
             const subdomain = hostname.split('.')[0];
-            const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
             
             const response = await axios.get(`${API_URL}/api/client/config`, {
                 headers: { 'X-Gym-Subdomain': subdomain }

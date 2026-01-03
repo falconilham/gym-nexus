@@ -22,7 +22,7 @@ const sequelize = process.env.DATABASE_URL
       process.env.DB_USER || 'postgres',
       process.env.DB_PASS || 'password',
       {
-        host: process.env.DB_HOST || 'localhost',
+        host: process.env.DB_HOST,
         dialect: 'postgres',
         dialectModule: require('pg'),
         logging: false,
