@@ -43,6 +43,8 @@ app.use(extractGymContext);
 
 // Mount routes
 app.use('/api/client', clientRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 // Global Error Handler (Deep Debugging)
 app.use((err, req, res, next) => {
