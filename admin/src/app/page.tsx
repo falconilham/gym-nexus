@@ -229,7 +229,7 @@ export default function LandingPage() {
                     ) : (
                         <Button 
                             component={Link}
-                            href="/login"
+                            href="/super-admin/login"
                             variant="contained" 
                             size="large"
                             sx={{ 

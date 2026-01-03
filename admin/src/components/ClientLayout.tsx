@@ -67,7 +67,6 @@ function InnerLayout({
   // 2. Super Admin pages (/super-admin/*)
   // 3. The Root Landing Page (but NOT a Gym Dashboard at /)
   const hideSidebar = 
-    pathname.split('/').some(p => p === 'login') || 
     pathname.startsWith('/super-admin') ||
     (pathname === '/' && isRootDomain);
 

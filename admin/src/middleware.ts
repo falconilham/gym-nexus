@@ -43,7 +43,7 @@ export default function middleware(req: NextRequest) {
      const parts = path.split('/').filter(Boolean);
      const firstSegment = parts[0];
 
-     const RESERVED_PATHS = ['login', 'super-admin', 'api', '_next', '_static', 'favicon.ico'];
+      const RESERVED_PATHS = ['super-admin', 'api', '_next', '_static', 'favicon.ico'];
      // Also skip if no segment (root)
      if (firstSegment && !RESERVED_PATHS.includes(firstSegment)) {
          // Assume it is a Gym ID. 
