@@ -62,7 +62,7 @@ const Gym = sequelize.define('Gym', {
 const Admin = sequelize.define(
   'Admin',
   {
-    gymId: { type: DataTypes.INTEGER, allowNull: false },
+    gymId: { type: DataTypes.INTEGER, allowNull: true },
     name: { type: DataTypes.STRING, allowNull: false },
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     password: { type: DataTypes.STRING, allowNull: false },
