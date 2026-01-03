@@ -28,9 +28,17 @@ const superAdminRoutes = require('./routes/superAdmin');
 app.use(extractGymContext);
 
 // Mount routes
-app.use('/api/super-admin', superAdminRoutes);
-app.use('/api/admin', adminRoutes);
 app.use('/api/client', clientRoutes);
+
+// Global Error Handler (Deep Debugging)
+app.use((err, req, res, next) => {
+  console.error('🔥 GLOBAL ERROR:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
+});
 
 app.get('/', (req, res) => {
   res.send('GymNexus API is running (Multi-Tenant v3)');
@@ -39,8 +47,14 @@ app.get('/', (req, res) => {
 const { seedDatabase } = require('./database');
 const { startSuspensionChecker } = require('./jobs/suspensionChecker');
 
-app.listen(PORT, async () => {
-  await seedDatabase();
-  startSuspensionChecker();
-  console.log(`Server running on port ${PORT}`);
-});
+// Only start server if not running in Vercel (serverless)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, async () => {
+    await seedDatabase();
+    startSuspensionChecker();
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+// Export for Vercel
+module.exports = app;

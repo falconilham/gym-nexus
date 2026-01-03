@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const sequelize = process.env.DATABASE_URL
   ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
+      dialectModule: require('pg'),
       logging: false,
       dialectOptions: {
         ssl:
@@ -23,6 +24,7 @@ const sequelize = process.env.DATABASE_URL
       {
         host: process.env.DB_HOST || 'localhost',
         dialect: 'postgres',
+        dialectModule: require('pg'),
         logging: false,
       }
     );
