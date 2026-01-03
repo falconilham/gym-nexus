@@ -79,7 +79,7 @@ export default function SuperAdminPage() {
 
   const AVAILABLE_FEATURES = ['dashboard', 'members', 'trainers', 'schedule', 'settings', 'activity', 'check_in'];
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
   const fetchData = useCallback(async () => {
     try {

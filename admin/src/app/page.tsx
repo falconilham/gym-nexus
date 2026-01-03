@@ -8,7 +8,7 @@ import { Dumbbell, BarChart3, Users, QrCode, ShieldCheck, LayoutDashboard, Zap, 
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN!;
 const PROTOCOL = process.env.NODE_ENV === 'development' ? 'http' : 'https';
 
 const getSubdomainUrl = (subdomain: string) => {
@@ -46,7 +46,7 @@ export default function LandingPage() {
       setCurrentLang(i18n.language);
     }, 0);
     
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/super-admin/gyms`, {
+    axios.get(`${process.env.NEXT_PUBLIC_API_URL!}/api/super-admin/gyms`, {
       headers: {
         "ngrok-skip-browser-warning": "true"
       }

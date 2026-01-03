@@ -9,7 +9,7 @@ export default function GymNotFound() {
 
   const handleGoHome = () => {
     // Redirect to the main portal
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN!;
     window.location.href = `http://${rootDomain}`;
   };
 

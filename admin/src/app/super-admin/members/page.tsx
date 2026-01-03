@@ -35,7 +35,7 @@ export default function SuperAdminMembersPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
   const fetchMembers = useCallback(async () => {
     try {

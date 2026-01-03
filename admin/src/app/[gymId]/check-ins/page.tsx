@@ -26,7 +26,7 @@ export default function CheckInsPage() {
 
   const fetchCheckIns = async () => {
     setLoading(true);
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL!;
     try {
       let url = `${API_URL}/api/admin/check-ins?limit=50`;
       if (selectedDate) {

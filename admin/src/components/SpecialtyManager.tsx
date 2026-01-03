@@ -39,7 +39,7 @@ export default function SpecialtyManager({ open, onClose, onUpdate }: SpecialtyM
   const [error, setError] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: () => {} });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
   const fetchSpecialties = async () => {
     if (!gymId) return;

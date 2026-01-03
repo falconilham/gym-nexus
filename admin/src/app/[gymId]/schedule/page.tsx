@@ -29,7 +29,7 @@ export default function SchedulePage() {
   useEffect(() => {
     const fetchClasses = async () => {
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+            const API_URL = process.env.NEXT_PUBLIC_API_URL!;
             const res = await axios.get(`${API_URL}/api/admin/classes`);
             setClassList(res.data);
         } catch (error) {

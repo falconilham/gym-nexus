@@ -119,7 +119,7 @@ export default function EditMemberModal({ isOpen, onClose, onSuccess, member }: 
     if (!member) return;
     
     try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL!;
         const body = {
             name: formData.name,
             email: formData.email,

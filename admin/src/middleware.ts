@@ -22,7 +22,7 @@ export default function middleware(req: NextRequest) {
   // You can set this via environment variable, e.g. NEXT_PUBLIC_ROOT_DOMAIN
   // Default to localhost:3000 if not set.
   // Note: removing port for cleaner subdomain extraction logic might be needed
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN!;
   
   // Check if the current hostname is the root domain or www
   // We need to handle port presence logic broadly.
@@ -30,7 +30,6 @@ export default function middleware(req: NextRequest) {
   const isRoot = 
       hostname === rootDomain || 
       hostname === `www.${rootDomain}` || 
-      hostname === 'localhost:3000' || 
       hostname === 'gym-nexus.vercel.app' ||
       hostname.includes('gym-nexus-admin'); // Catch Vercel previews
 

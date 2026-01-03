@@ -63,7 +63,7 @@ export default function ActivityPage() {
         try {
             setLoading(true);
             setError(null);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const API_URL = process.env.NEXT_PUBLIC_API_URL!;
             const response = await axios.get(`${API_URL}/api/admin/activity-logs`, {
                 params: { 
                     gymId: admin.gymId,

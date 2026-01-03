@@ -44,7 +44,7 @@ function InnerLayout({
   
   useEffect(() => {
     const hostname = window.location.hostname;
-    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').split(':')[0];
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN!).split(':')[0];
     
     const isRoot = hostname === rootDomain || 
            hostname === `www.${rootDomain}` || 

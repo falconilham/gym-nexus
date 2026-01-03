@@ -103,7 +103,7 @@ export default function MembersPage() {
 
   const fetchMembers = async () => {
     if (!gymId) return;
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL!;
     try {
       const response = await axios.get(`${API_URL}/api/admin/members`, {
         params: { 
@@ -158,7 +158,7 @@ export default function MembersPage() {
       confirmColor: 'error',
       onConfirm: async () => {
         try {
-          const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+          const API_URL = process.env.NEXT_PUBLIC_API_URL!;
           await axios.delete(`${API_URL}/api/admin/members/${member.id}`);
           fetchMembers();
         } catch(err) {
@@ -182,7 +182,7 @@ export default function MembersPage() {
   const confirmSuspendMember = async () => {
     if (!suspendDialog.member) return;
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL!;
       await axios.patch(`${API_URL}/api/admin/members/${suspendDialog.member.id}/suspend`, {
         suspended: !suspendDialog.member.suspended,
         reason: suspendReason,

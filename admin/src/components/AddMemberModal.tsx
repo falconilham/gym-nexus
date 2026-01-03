@@ -94,7 +94,7 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, gymId }: Ad
     }
 
     try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL!;
         const res = await axios.post(`${API_URL}/api/admin/members`, { ...formData, gymId });
         
         if (res.status === 201 || res.status === 200) {

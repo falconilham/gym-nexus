@@ -137,7 +137,7 @@ export default function Home() {
 
     const fetchData = async () => {
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+            const API_URL = process.env.NEXT_PUBLIC_API_URL!;
             const config = { params: { gymId: admin.gymId } };
             
             // Fetch Stats
