@@ -25,8 +25,14 @@ export default function middleware(req: NextRequest) {
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
   
   // Check if the current hostname is the root domain or www
-  // We need to handle port presence logic broadly
-  const isRoot = hostname === rootDomain || hostname === `www.${rootDomain}` || hostname === 'localhost:3000' || hostname === 'gym-nexus.vercel.app'; // add your production domains here
+  // We need to handle port presence logic broadly.
+  // Also treat Vercel preview URLs (containing 'gym-nexus') as root to prevent redirection loop.
+  const isRoot = 
+      hostname === rootDomain || 
+      hostname === `www.${rootDomain}` || 
+      hostname === 'localhost:3000' || 
+      hostname === 'gym-nexus.vercel.app' ||
+      hostname.includes('gym-nexus-admin'); // Catch Vercel previews
 
   if (isRoot) {
      // If it's the root domain, we normally serve the app as is.
