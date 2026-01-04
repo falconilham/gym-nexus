@@ -1,0 +1,121 @@
+name: Deploy Admin to Plesk
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'admin/**'
+      - '.github/workflows/deploy-admin.yml'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Build and Deploy Admin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'admin/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./admin
+        run: npm ci
+
+      - name: Build application
+        working-directory: ./admin
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_ROOT_DOMAIN: ${{ secrets.NEXT_PUBLIC_ROOT_DOMAIN }}
+        run: |
+          # Create production env file
+          echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env.production
+          echo "NEXT_PUBLIC_ROOT_DOMAIN=$NEXT_PUBLIC_ROOT_DOMAIN" >> .env.production
+
+          # Build the app
+          npm run build
+
+      - name: Prepare deployment files
+        working-directory: ./admin
+        run: |
+          # Create deployment directory
+          mkdir -p deploy
+
+          # Copy standalone build
+          cp -r .next/standalone/iseng/gym-nexus/admin/* deploy/
+
+          # Copy static files
+          mkdir -p deploy/.next/static
+          cp -r .next/static/* deploy/.next/static/
+
+          # Copy public files if exists
+          if [ -d "public" ]; then
+            cp -r public deploy/
+          fi
+
+          # Copy package files
+          cp package.json deploy/
+          cp package-lock.json deploy/ || true
+
+          # Create start script
+          cat > deploy/start.sh << 'EOF'
+          #!/bin/bash
+          export NODE_ENV=production
+          export PORT=${PORT:-3000}
+          node server.js
+          EOF
+          chmod +x deploy/start.sh
+
+          # Show deployment size
+          du -sh deploy
+
+      - name: Deploy to Plesk via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.FTP_USERNAME }}
+          server: ${{ secrets.FTP_SERVER }}
+          port: ${{ secrets.FTP_PORT || 22 }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          local_path: './admin/deploy/*'
+          remote_path: '/httpdocs'
+          sftp_only: false
+          delete_remote_files: false
+
+      - name: Restart Application
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.FTP_PORT || 22 }}
+          script: |
+            cd /httpdocs
+
+            # Stop existing process
+            pkill -f "node server.js" || true
+
+            # Start new process with PM2 or nohup
+            if command -v pm2 &> /dev/null; then
+              pm2 delete gym-nexus-admin || true
+              pm2 start server.js --name gym-nexus-admin
+              pm2 save
+            else
+              nohup node server.js > app.log 2>&1 &
+            fi
+
+            echo "✅ Deployment completed!"
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "📦 Build size: $(du -sh admin/deploy | cut -f1)"
+          echo "🌐 URL: https://fitflow.id"
+          echo "⏰ Deployed at: $(date)"

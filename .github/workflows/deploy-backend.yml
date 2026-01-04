@@ -1,0 +1,114 @@
+name: Deploy Backend to Plesk
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci --only=production
+
+      - name: Prepare deployment files
+        working-directory: ./backend
+        run: |
+          # Create deployment directory
+          mkdir -p deploy
+
+          # Copy application files
+          cp -r src deploy/
+          cp -r node_modules deploy/
+          cp package.json deploy/
+          cp package-lock.json deploy/ || true
+
+          # Copy environment template
+          if [ -f ".env.example" ]; then
+            cp .env.example deploy/
+          fi
+
+          # Create start script
+          cat > deploy/start.sh << 'EOF'
+          #!/bin/bash
+          export NODE_ENV=production
+          export PORT=${PORT:-5000}
+          node src/index.js
+          EOF
+          chmod +x deploy/start.sh
+
+          # Show deployment size
+          du -sh deploy
+
+      - name: Deploy to Plesk via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.BACKEND_FTP_USERNAME }}
+          server: ${{ secrets.BACKEND_FTP_SERVER }}
+          port: ${{ secrets.BACKEND_FTP_PORT || 22 }}
+          ssh_private_key: ${{ secrets.BACKEND_SSH_PRIVATE_KEY }}
+          local_path: './backend/deploy/*'
+          remote_path: '/httpdocs'
+          sftp_only: false
+          delete_remote_files: false
+
+      - name: Setup Environment and Restart
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.BACKEND_FTP_SERVER }}
+          username: ${{ secrets.BACKEND_FTP_USERNAME }}
+          key: ${{ secrets.BACKEND_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.BACKEND_FTP_PORT || 22 }}
+          script: |
+            cd /httpdocs
+
+            # Create .env file if not exists
+            if [ ! -f ".env" ]; then
+              cat > .env << 'ENVEOF'
+            PORT=${{ secrets.BACKEND_PORT || 5000 }}
+            NODE_ENV=production
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+            ENVEOF
+            fi
+
+            # Stop existing process
+            pkill -f "node src/index.js" || true
+
+            # Start new process
+            if command -v pm2 &> /dev/null; then
+              pm2 delete gym-nexus-backend || true
+              pm2 start src/index.js --name gym-nexus-backend
+              pm2 save
+            else
+              nohup node src/index.js > app.log 2>&1 &
+            fi
+
+            echo "✅ Backend deployment completed!"
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "🎉 Backend deployment successful!"
+          echo "📦 Build size: $(du -sh backend/deploy | cut -f1)"
+          echo "🌐 API URL: https://api.fitflow.id"
+          echo "⏰ Deployed at: $(date)"
