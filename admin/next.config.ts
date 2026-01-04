@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   
   // Output standalone for Node.js hosting
-  output: 'standalone',
+  output: 'export',
   
   images: {
     unoptimized: true, // Keep this for simpler image handling
