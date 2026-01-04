@@ -1,195 +1,261 @@
-# 🚀 GitHub Actions Auto-Deployment Guide
+# 🚀# GitHub Actions Deployment Guide
 
-Panduan lengkap untuk setup auto-deployment dari GitHub ke Plesk hosting menggunakan GitHub Actions.
+This guide explains how to set up automated deployment to Plesk using GitHub Actions with **FTP**.
 
-## 📋 Overview
+## Overview
 
-Setiap kali Anda push code ke branch `main`, GitHub Actions akan otomatis:
+We have two separate workflows:
 
-1. ✅ Build aplikasi
-2. ✅ Deploy ke Plesk hosting
-3. ✅ Restart aplikasi
+1. **Backend Deployment** (`deploy-backend.yml`) - Deploys Node.js backend to `api.fitflow.id`
+2. **Admin Deployment** (`deploy-admin.yml`) - Deploys Next.js admin panel to `fitflow.id`
 
-## 🔧 Setup GitHub Secrets
+Both workflows use **FTP** for file transfer since SSH is not available on the hosting provider.
 
-Anda perlu menambahkan secrets di GitHub repository untuk credentials hosting.
+---
 
-### Cara Menambahkan Secrets:
+## Prerequisites
 
-1. Buka repository di GitHub
-2. Klik **Settings** → **Secrets and variables** → **Actions**
-3. Klik **New repository secret**
-4. Tambahkan secrets berikut:
+### 1. FTP Access Information
 
-### Admin App Secrets:
+You need the following information from your Plesk hosting:
 
-| Secret Name               | Description      | Example                        |
-| ------------------------- | ---------------- | ------------------------------ |
-| `FTP_SERVER`              | Hostname Plesk   | `cpkh07.kilathosting.id`       |
-| `FTP_USERNAME`            | SSH/FTP username | `fitflowid`                    |
-| `FTP_PORT`                | SSH port         | `22`                           |
-| `SSH_PRIVATE_KEY`         | SSH private key  | (lihat cara generate di bawah) |
-| `NEXT_PUBLIC_API_URL`     | Backend API URL  | `https://api.fitflow.id`       |
-| `NEXT_PUBLIC_ROOT_DOMAIN` | Root domain      | `fitflow.id`                   |
+#### For Admin Panel (fitflow.id):
 
-### Backend API Secrets:
+- **FTP Server**: `cpkh07.kilathosting.id`
+- **FTP Username**: Your Plesk FTP username
+- **FTP Password**: Your Plesk FTP password
+- **FTP Port**: `21` (default FTP port)
+- **Remote Directory**: `/httpdocs`
 
-| Secret Name               | Description          | Example                  |
-| ------------------------- | -------------------- | ------------------------ |
-| `BACKEND_FTP_SERVER`      | Backend hostname     | `cpkh07.kilathosting.id` |
-| `BACKEND_FTP_USERNAME`    | Backend SSH username | `apifitflowid`           |
-| `BACKEND_FTP_PORT`        | Backend SSH port     | `22`                     |
-| `BACKEND_SSH_PRIVATE_KEY` | Backend SSH key      | (lihat cara generate)    |
-| `DATABASE_URL`            | Database connection  | `postgresql://...`       |
-| `JWT_SECRET`              | JWT secret key       | `your-secret-key`        |
-| `CORS_ORIGIN`             | CORS allowed origins | `https://fitflow.id`     |
-| `BACKEND_PORT`            | Backend port         | `5000`                   |
+#### For Backend (api.fitflow.id):
 
-## 🔑 Generate SSH Key untuk GitHub Actions
+- **FTP Server**: `cpkh07.kilathosting.id`
+- **FTP Username**: Your Plesk FTP username for API subdomain
+- **FTP Password**: Your Plesk FTP password for API subdomain
+- **FTP Port**: `21` (default FTP port)
+- **Remote Directory**: `/httpdocs`
 
-### 1. Generate SSH Key Pair
+### 2. Environment Variables
 
-Di komputer lokal Anda:
+You need to prepare these values:
 
-```bash
-# Generate new SSH key
-ssh-keygen -t ed25519 -C "github-actions@fitflow.id" -f ~/.ssh/github_actions_fitflow
+- `DATABASE_URL` - Your PostgreSQL connection string
+- `JWT_SECRET` - Secret key for JWT tokens
+- `CORS_ORIGIN` - Allowed CORS origins (e.g., `https://fitflow.id`)
+- `NEXT_PUBLIC_API_URL` - Backend API URL (e.g., `https://api.fitflow.id`)
+- `NEXT_PUBLIC_ROOT_DOMAIN` - Root domain (e.g., `fitflow.id`)
 
-# Akan menghasilkan 2 file:
-# - github_actions_fitflow (private key) → untuk GitHub Secret
-# - github_actions_fitflow.pub (public key) → untuk Plesk
+---
+
+## Setup Instructions
+
+### Step 1: Get FTP Credentials from Plesk
+
+1. **Login to Plesk**: https://cpkh07.kilathosting.id:8443
+2. **For Admin Panel (fitflow.id)**:
+   - Go to **Websites & Domains** → **fitflow.id**
+   - Click **FTP Access**
+   - Note down the FTP username and password
+   - If no FTP account exists, create one
+
+3. **For Backend (api.fitflow.id)**:
+   - Go to **Websites & Domains** → **api.fitflow.id**
+   - Click **FTP Access**
+   - Note down the FTP username and password
+   - If no FTP account exists, create one
+
+### Step 2: Add Secrets to GitHub Repository
+
+Go to your GitHub repository: https://github.com/falconilham/gym-nexus/settings/secrets/actions
+
+Click **"New repository secret"** and add the following secrets:
+
+#### Admin Panel Secrets:
+
+```
+FTP_SERVER = cpkh07.kilathosting.id
+FTP_USERNAME = [your-fitflow-ftp-username]
+FTP_PASSWORD = [your-fitflow-ftp-password]
+FTP_PORT = 21
+NEXT_PUBLIC_API_URL = https://api.fitflow.id
+NEXT_PUBLIC_ROOT_DOMAIN = fitflow.id
 ```
 
-### 2. Copy Public Key ke Plesk
+#### Backend Secrets:
 
-```bash
-# Lihat public key
-cat ~/.ssh/github_actions_fitflow.pub
-
-# Copy output-nya, lalu tambahkan ke Plesk:
-# Plesk → SSH Access → Authorized Keys → Add Key
+```
+BACKEND_FTP_SERVER = cpkh07.kilathosting.id
+BACKEND_FTP_USERNAME = [your-api-ftp-username]
+BACKEND_FTP_PASSWORD = [your-api-ftp-password]
+BACKEND_FTP_PORT = 21
+BACKEND_PORT = 5000
+DATABASE_URL = [your-postgresql-connection-string]
+JWT_SECRET = [your-jwt-secret-key]
+CORS_ORIGIN = https://fitflow.id
 ```
 
-**Atau via SSH:**
+---
 
-```bash
-# Upload public key ke server
-ssh-copy-id -i ~/.ssh/github_actions_fitflow.pub fitflowid@cpkh07.kilathosting.id
-```
+## How It Works
 
-### 3. Copy Private Key ke GitHub Secret
+### Backend Deployment Workflow
 
-```bash
-# Lihat private key
-cat ~/.ssh/github_actions_fitflow
+When you push changes to `backend/**` or manually trigger the workflow:
 
-# Copy SELURUH output (termasuk -----BEGIN dan -----END)
-# Paste ke GitHub Secret: SSH_PRIVATE_KEY
-```
+1. **Checkout code** from GitHub
+2. **Setup Node.js** v20
+3. **Install dependencies** (production only)
+4. **Prepare deployment files**:
+   - Copy `src/`, `node_modules/`, `package.json`
+   - Create `.env` file with secrets
+   - Create `start.sh` script
+5. **Deploy via FTP** to `/httpdocs` on `api.fitflow.id`
+6. **Show deployment summary**
 
-## 📁 Workflow Files
+### Admin Deployment Workflow
 
-### Admin Deployment (`.github/workflows/deploy-admin.yml`)
+When you push changes to `admin/**` or manually trigger the workflow:
 
-**Trigger:**
+1. **Checkout code** from GitHub
+2. **Setup Node.js** v20
+3. **Install dependencies**
+4. **Build Next.js app** with production environment variables
+5. **Prepare deployment files**:
+   - Copy standalone build from `.next/standalone/`
+   - Copy static files from `.next/static/`
+   - Copy `public/` directory
+   - Create `start.sh` script
+6. **Deploy via FTP** to `/httpdocs` on `fitflow.id`
+7. **Show deployment summary**
 
-- Push ke `main` branch dengan perubahan di folder `admin/`
-- Manual trigger via GitHub UI
+---
 
-**Steps:**
+## Manual Deployment Trigger
 
-1. Checkout code
-2. Setup Node.js 20
-3. Install dependencies
-4. Build Next.js app
-5. Prepare deployment files (standalone + static)
-6. Deploy via SFTP
-7. Restart app via SSH
+You can manually trigger deployments from GitHub Actions:
 
-### Backend Deployment (`.github/workflows/deploy-backend.yml`)
+1. Go to: https://github.com/falconilham/gym-nexus/actions
+2. Select the workflow you want to run:
+   - **Deploy Admin to Plesk**
+   - **Deploy Backend to Plesk**
+3. Click **"Run workflow"** → **"Run workflow"**
 
-**Trigger:**
+---
 
-- Push ke `main` branch dengan perubahan di folder `backend/`
-- Manual trigger via GitHub UI
+## Post-Deployment Steps
 
-**Steps:**
+### Starting the Application on Plesk
 
-1. Checkout code
-2. Setup Node.js 20
-3. Install production dependencies
-4. Prepare deployment files
-5. Deploy via SFTP
-6. Setup environment & restart
+Since FTP only uploads files and cannot execute commands, you need to manually start the application via Plesk:
 
-## 🎯 Manual Trigger
+#### For Backend (api.fitflow.id):
 
-Anda bisa trigger deployment manual tanpa push code:
+1. Login to Plesk
+2. Go to **Websites & Domains** → **api.fitflow.id**
+3. Click **Node.js**
+4. Configure:
+   - **Application Mode**: Production
+   - **Application Root**: `/httpdocs`
+   - **Application Startup File**: `src/index.js`
+   - **Node.js Version**: 20.x
+5. Click **Enable Node.js**
+6. Click **Restart App**
 
-1. Buka repository di GitHub
-2. Klik **Actions** tab
-3. Pilih workflow (Deploy Admin / Deploy Backend)
-4. Klik **Run workflow** → **Run workflow**
+#### For Admin Panel (fitflow.id):
 
-## 📊 Monitoring Deployment
+1. Login to Plesk
+2. Go to **Websites & Domains** → **fitflow.id**
+3. Click **Node.js**
+4. Configure:
+   - **Application Mode**: Production
+   - **Application Root**: `/httpdocs`
+   - **Application Startup File**: `server.js`
+   - **Node.js Version**: 20.x
+5. Click **Enable Node.js**
+6. Click **Restart App**
 
-### Melihat Deployment Logs:
+---
 
-1. Buka **Actions** tab di GitHub
-2. Klik workflow run yang sedang berjalan
-3. Klik job "Build and Deploy Admin" atau "Deploy Backend"
-4. Lihat logs real-time
+## Troubleshooting
 
-### Deployment Status:
+### FTP Connection Failed
 
-- ✅ **Green checkmark**: Deployment berhasil
-- ❌ **Red X**: Deployment gagal (klik untuk lihat error)
-- 🟡 **Yellow dot**: Sedang berjalan
+**Error**: `Failed to connect to FTP server`
 
-## 🔍 Troubleshooting
+**Solution**:
 
-### Error: "Permission denied (publickey)"
+1. Verify FTP credentials in GitHub Secrets
+2. Check if FTP port is correct (usually `21`)
+3. Ensure FTP is enabled in Plesk for the domain
+4. Check firewall settings
 
-**Solusi:**
+### Files Not Uploading
 
-1. Pastikan SSH public key sudah ditambahkan ke Plesk
-2. Verify private key di GitHub Secret benar (termasuk header/footer)
-3. Test SSH connection manual:
-   ```bash
-   ssh -i ~/.ssh/github_actions_fitflow fitflowid@cpkh07.kilathosting.id
-   ```
+**Error**: `Permission denied` or `Cannot create directory`
 
-### Error: "npm ci failed"
+**Solution**:
 
-**Solusi:**
+1. Check FTP user has write permissions
+2. Verify the remote directory path is correct (`/httpdocs`)
+3. Check disk space on hosting
 
-1. Pastikan `package-lock.json` ada di repository
-2. Commit `package-lock.json`:
-   ```bash
-   git add package-lock.json
-   git commit -m "Add package-lock.json"
-   git push
-   ```
+### Application Not Starting
 
-### Error: "Build failed"
+**Error**: Application doesn't respond after deployment
 
-**Solusi:**
+**Solution**:
 
-1. Test build di local terlebih dahulu:
-   ```bash
-   cd admin
-   npm run build:prod
-   ```
-2. Fix error yang muncul
-3. Push fix ke GitHub
+1. Login to Plesk
+2. Go to **Node.js** settings for the domain
+3. Click **Restart App**
+4. Check **Logs** for error messages
+5. Verify environment variables are set correctly
 
-### Error: "SFTP upload failed"
+### Database Connection Failed
 
-**Solusi:**
+**Error**: `Cannot connect to database`
 
-1. Verify FTP credentials di GitHub Secrets
-2. Pastikan remote path `/httpdocs` accessible
-3. Check disk space di hosting
+**Solution**:
+
+1. Verify `DATABASE_URL` secret is correct
+2. Check if database server allows connections from Plesk server
+3. Verify database credentials and database name
+
+---
+
+## Security Notes
+
+1. **Never commit secrets** to the repository
+2. **Use strong passwords** for FTP accounts
+3. **Rotate credentials** periodically
+4. **Use HTTPS** for all API and admin panel access
+5. **Keep dependencies updated** to patch security vulnerabilities
+
+---
+
+## Monitoring
+
+After deployment, monitor your application:
+
+1. **Check GitHub Actions logs**: https://github.com/falconilham/gym-nexus/actions
+2. **Check Plesk logs**:
+   - Go to **Websites & Domains** → **[domain]** → **Logs**
+3. **Test endpoints**:
+   - Admin: https://fitflow.id
+   - API: https://api.fitflow.id/health
+
+---
+
+## Next Steps
+
+1. ✅ Set up FTP credentials in Plesk
+2. ✅ Add all secrets to GitHub
+3. ✅ Test manual deployment
+4. ✅ Configure Node.js in Plesk
+5. ✅ Verify application is running
+6. ✅ Set up monitoring and alerts
+7. Pastikan remote path `/httpdocs` accessible
+8. Check disk space di hosting
 
 ## 🚦 Deployment Flow
 

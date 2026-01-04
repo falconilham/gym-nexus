@@ -76,41 +76,20 @@ jobs:
           # Show deployment size
           du -sh deploy
 
-      - name: Deploy to Plesk via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+      - name: Deploy to Plesk via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          username: ${{ secrets.FTP_USERNAME }}
           server: ${{ secrets.FTP_SERVER }}
-          port: ${{ secrets.FTP_PORT || 22 }}
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          local_path: './admin/deploy/*'
-          remote_path: '/httpdocs'
-          sftp_only: false
-          delete_remote_files: false
-
-      - name: Restart Application
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.FTP_PORT || 22 }}
-          script: |
-            cd /httpdocs
-
-            # Stop existing process
-            pkill -f "node server.js" || true
-
-            # Start new process with PM2 or nohup
-            if command -v pm2 &> /dev/null; then
-              pm2 delete gym-nexus-admin || true
-              pm2 start server.js --name gym-nexus-admin
-              pm2 save
-            else
-              nohup node server.js > app.log 2>&1 &
-            fi
-
-            echo "✅ Deployment completed!"
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 21 }}
+          local-dir: ./admin/deploy/
+          server-dir: /httpdocs/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**/.cache/**
 
       - name: Deployment Summary
         if: success()
