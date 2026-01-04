@@ -1,0 +1,35 @@
+{
+  "name": "fitflow-production",
+  "version": "1.0.0",
+  "description": "FitFlow - Gym Management System",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "pm2:start": "pm2 start app.js --name fitflow",
+    "pm2:stop": "pm2 stop fitflow",
+    "pm2:restart": "pm2 restart fitflow",
+    "pm2:logs": "pm2 logs fitflow"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "3.0.3",
+    "cors": "2.8.5",
+    "dotenv": "17.2.3",
+    "express": "5.2.1",
+    "multer": "2.0.2",
+    "pg": "8.16.3",
+    "pg-hstore": "2.3.4",
+    "qrcode": "1.5.4",
+    "sequelize": "6.37.7"
+  },
+  "keywords": [
+    "gym",
+    "fitness",
+    "management"
+  ],
+  "author": "",
+  "license": "ISC"
+}

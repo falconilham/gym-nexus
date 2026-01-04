@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   
-
+  // Output standalone for Node.js hosting
+  output: 'standalone',
   
   images: {
     unoptimized: true, // Keep this for simpler image handling

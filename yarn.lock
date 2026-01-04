@@ -1280,7 +1280,7 @@
     find-up "^5.0.0"
     js-yaml "^4.1.0"
 
-"@gym-nexus/admin@file:/Users/bonita/Programming/iseng/gym-nexus/admin":
+"@fitflow/admin@file:/Users/bonita/Programming/iseng/gym-nexus/admin":
   version "0.1.0"
   resolved "file:admin"
   dependencies:
@@ -1288,6 +1288,7 @@
     "@emotion/styled" "11.14.1"
     "@mui/icons-material" "7.3.6"
     "@mui/material" "7.3.6"
+    "@mui/x-date-pickers" "8.23.0"
     axios "1.13.2"
     date-fns "4.1.0"
     framer-motion "12.23.26"
@@ -1299,40 +1300,6 @@
     react "19.1.0"
     react-dom "19.1.0"
     react-i18next "16.5.0"
-
-"@gym-nexus/backend@file:/Users/bonita/Programming/iseng/gym-nexus/backend":
-  version "1.0.0"
-  resolved "file:backend"
-  dependencies:
-    bcryptjs "3.0.3"
-    cors "2.8.5"
-    dotenv "17.2.3"
-    express "5.2.1"
-    multer "2.0.2"
-    nodemon "3.1.11"
-    pg "8.16.3"
-    pg-hstore "2.3.4"
-    qrcode "1.5.4"
-    sequelize "6.37.7"
-
-"@gym-nexus/client@file:/Users/bonita/Programming/iseng/gym-nexus/client":
-  version "1.0.0"
-  resolved "file:client"
-  dependencies:
-    "@expo/vector-icons" "^15.0.3"
-    "@react-native-async-storage/async-storage" "2.2.0"
-    axios "1.13.2"
-    expo "~54.0.30"
-    expo-image-picker "17.0.10"
-    expo-linear-gradient "~15.0.8"
-    expo-status-bar "~3.0.9"
-    react "19.1.0"
-    react-native "0.81.5"
-    react-native-svg "15.12.1"
-
-"@gym-nexus/shared@file:/Users/bonita/Programming/iseng/gym-nexus/packages/shared":
-  version "1.0.0"
-  resolved "file:packages/shared"
 
 "@humanfs/core@^0.19.1":
   version "0.19.1"
@@ -3296,6 +3263,23 @@ domutils@^3.0.1:
     domelementtype "^2.3.0"
     domhandler "^5.0.3"
 
+dotenv-cli@11.0.0:
+  version "11.0.0"
+  resolved "https://registry.npmjs.org/dotenv-cli/-/dotenv-cli-11.0.0.tgz"
+  integrity sha512-r5pA8idbk7GFWuHEU7trSTflWcdBpQEK+Aw17UrSHjS6CReuhrrPcyC3zcQBPQvhArRHnBo/h6eLH1fkCvNlww==
+  dependencies:
+    cross-spawn "^7.0.6"
+    dotenv "^17.1.0"
+    dotenv-expand "^12.0.0"
+    minimist "^1.2.6"
+
+dotenv-expand@^12.0.0:
+  version "12.0.3"
+  resolved "https://registry.npmjs.org/dotenv-expand/-/dotenv-expand-12.0.3.tgz"
+  integrity sha512-uc47g4b+4k/M/SeaW1y4OApx+mtLWl92l5LMPP0GNXctZqELk+YGgOPIIC5elYmUH4OuoK3JLhuRUYegeySiFA==
+  dependencies:
+    dotenv "^16.4.5"
+
 dotenv-expand@~11.0.6:
   version "11.0.7"
   resolved "https://registry.npmjs.org/dotenv-expand/-/dotenv-expand-11.0.7.tgz"
@@ -3307,6 +3291,11 @@ dotenv@^16.4.5, dotenv@~16.4.5:
   version "16.4.7"
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-16.4.7.tgz"
   integrity sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==
+
+dotenv@^17.1.0:
+  version "17.2.3"
+  resolved "https://registry.npmjs.org/dotenv/-/dotenv-17.2.3.tgz"
+  integrity sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==
 
 dotenv@17.2.3:
   version "17.2.3"
