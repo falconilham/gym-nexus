@@ -71,7 +71,7 @@ export default function TrainersPage() {
   const [suspendDialog, setSuspendDialog] = useState({ open: false, trainer: null as Trainer | null });
   const [suspendReason, setSuspendReason] = useState('');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fitflow-backend.vercel.app';
 
   const fetchTrainers = async () => {
     if (!gymId) return;

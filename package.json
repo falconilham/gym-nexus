@@ -1,5 +1,5 @@
 {
-  "name": "gym-nexus",
+  "name": "fitflow",
   "version": "1.0.0",
   "private": true,
   "description": "GymNexus monorepo containing mobile app, admin panel, and backend",
@@ -31,7 +31,11 @@
     "build:admin:prod": "npm run build:prod --workspace=admin",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
-    "install:all": "npm install"
+    "install:all": "npm install",
+    "install:backend": "npm install --workspace=backend",
+    "install:admin": "npm install --workspace=admin",
+    "install:client": "npm install --workspace=client",
+    "install:packages": "npm install --workspace=packages/*"
   },
   "engines": {
     "node": ">=18.0.0",

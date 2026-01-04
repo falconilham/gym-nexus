@@ -26,7 +26,7 @@ export default function CheckInsPage() {
 
   const fetchCheckIns = async () => {
     setLoading(true);
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fitflow-backend.vercel.app';
     try {
       let url = `${API_URL}/api/admin/check-ins?limit=50`;
       if (selectedDate) {

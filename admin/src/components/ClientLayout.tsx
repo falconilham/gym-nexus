@@ -44,7 +44,7 @@ function InnerLayout({
   
   useEffect(() => {
     const hostname = window.location.hostname;
-    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gym-nexus-admin.vercel.app').split(':')[0];
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'fitflow-admin.vercel.app').split(':')[0];
     
     const isRoot = hostname === rootDomain || 
            hostname === `www.${rootDomain}` || 

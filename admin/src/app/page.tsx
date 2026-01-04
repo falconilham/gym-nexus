@@ -8,7 +8,7 @@ import { Dumbbell, BarChart3, Users, QrCode, ShieldCheck, LayoutDashboard, Zap, 
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gym-nexus-admin.vercel.app';
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'fitflow-admin.vercel.app';
 const PROTOCOL = process.env.NODE_ENV === 'development' ? 'http' : 'https';
 
 const getSubdomainUrl = (subdomain: string) => {

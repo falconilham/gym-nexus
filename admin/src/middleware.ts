@@ -22,7 +22,10 @@ export default function middleware(req: NextRequest) {
   // You can set this via environment variable, e.g. NEXT_PUBLIC_ROOT_DOMAIN
   // Default to localhost:3000 if not set.
   // Note: removing port for cleaner subdomain extraction logic might be needed
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gym-nexus-admin.vercel.app';
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'fitflow-admin.vercel.app';
+  
+  // Detect if we're on Vercel (*.vercel.app domains don't support wildcard subdomains)
+  const isVercelDomain = hostname.includes('.vercel.app');
   
   // Check if the current hostname is the root domain or www
   // We need to handle port presence logic broadly.
@@ -30,36 +33,44 @@ export default function middleware(req: NextRequest) {
   const isRoot = 
       hostname === rootDomain || 
       hostname === `www.${rootDomain}` || 
-      hostname === 'gym-nexus.vercel.app' ||
-      hostname.includes('gym-nexus-admin'); // Catch Vercel previews
+      hostname === 'fitflow.vercel.app' ||
+      hostname.includes('fitflow-admin'); // Catch Vercel previews
 
   if (isRoot) {
      // If it's the root domain, we normally serve the app as is.
-     // BUT, if the path looks like /GymA/, we want to REDIRECT to GymA.domain.com/
-     // Exempt paths: /login, /super-admin, /_next, /api, /favicon, etc.
+     // On Vercel: Use path-based routing (no redirect) because *.vercel.app doesn't support wildcard subdomains
+     // On localhost or custom domain: Redirect to subdomain for better UX
      
      const path = url.pathname;
      const parts = path.split('/').filter(Boolean);
      const firstSegment = parts[0];
 
-      const RESERVED_PATHS = ['super-admin', 'api', '_next', '_static', 'favicon.ico'];
+      const RESERVED_PATHS = ['super-admin', 'api', '_next', '_static', 'favicon.ico', 'login'];
      // Also skip if no segment (root)
      if (firstSegment && !RESERVED_PATHS.includes(firstSegment)) {
-         // Assume it is a Gym ID. 
-         // Redirect: localhost:3000/GymA/dashboard -> GymA.localhost:3000/dashboard
+         // Assume it is a Gym ID (subdomain)
          
-         const newSubdomain = firstSegment;
-         // Remove the first segment from path
-         const newPath = path.replace(`/${firstSegment}`, '') || '/';
-         
-         // Construct new hostname
-         // Preserve port if present
-         const portSuffix = rootDomain.includes(':') ? `:${rootDomain.split(':')[1]}` : '';
-         const bareRoot = rootDomain.split(':')[0];
-         const newHost = `${newSubdomain}.${bareRoot}${portSuffix}`;
-         
-         return NextResponse.redirect(new URL(newPath, `http://${newHost}`)); 
-         // Note: protocol is hardcoded to http for localhost. In prod, use req.nextUrl.protocol
+         // On Vercel: Keep path-based routing (don't redirect)
+         // On localhost/custom domain: Redirect to subdomain
+         if (isVercelDomain) {
+             // Keep the path as is, Next.js will handle /[gymId] routing
+             return NextResponse.next();
+         } else {
+             // Redirect: localhost:3000/GymA/dashboard -> GymA.localhost:3000/dashboard
+             const newSubdomain = firstSegment;
+             // Remove the first segment from path
+             const newPath = path.replace(`/${firstSegment}`, '') || '/';
+             
+             // Construct new hostname
+             // Preserve port if present
+             const portSuffix = rootDomain.includes(':') ? `:${rootDomain.split(':')[1]}` : '';
+             const bareRoot = rootDomain.split(':')[0];
+             const newHost = `${newSubdomain}.${bareRoot}${portSuffix}`;
+             
+             // Use the request protocol instead of hardcoded http
+             const protocol = req.nextUrl.protocol || 'http:';
+             return NextResponse.redirect(new URL(newPath, `${protocol}//${newHost}`)); 
+         }
      }
 
      return NextResponse.next();

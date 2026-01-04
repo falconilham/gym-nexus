@@ -1,5 +1,5 @@
 {
-  "name": "@gym-nexus/shared",
+  "name": "@fitflow/shared",
   "version": "1.0.0",
   "description": "Shared utilities and types for GymNexus",
   "main": "index.js",

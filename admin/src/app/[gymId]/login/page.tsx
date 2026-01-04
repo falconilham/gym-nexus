@@ -35,7 +35,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fitflow-backend.vercel.app';
 
   useEffect(() => {
     if (gymId) {

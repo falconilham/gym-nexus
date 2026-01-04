@@ -40,7 +40,7 @@ export default function SettingsPage() {
         email: '',
     });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fitflow-backend.vercel.app';
 
     useEffect(() => {
         fetchSettings();

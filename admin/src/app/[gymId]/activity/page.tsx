@@ -63,7 +63,7 @@ export default function ActivityPage() {
         try {
             setLoading(true);
             setError(null);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gym-nexus-backend.vercel.app';
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fitflow-backend.vercel.app';
             const response = await axios.get(`${API_URL}/api/admin/activity-logs`, {
                 params: { 
                     gymId: admin.gymId,

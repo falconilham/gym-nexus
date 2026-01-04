@@ -1,12 +1,19 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
-// Use DATABASE_URL if available (Railway), otherwise use individual env vars (local dev)
+// Use DATABASE_URL if available (Railway/Vercel), otherwise use individual env vars (local dev)
 const sequelize = process.env.DATABASE_URL
   ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
       dialectModule: require('pg'),
       logging: false,
+      // Connection pool configuration for serverless (Vercel)
+      pool: {
+        max: 2, // Minimal pool for serverless
+        min: 0,
+        acquire: 30000, // 30 seconds
+        idle: 10000, // 10 seconds
+      },
       dialectOptions: {
         ssl:
           process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production'
@@ -15,6 +22,8 @@ const sequelize = process.env.DATABASE_URL
                 rejectUnauthorized: false, // Required for Supabase/Railway external connections
               }
             : false,
+        // Connection timeout
+        connectTimeout: 60000, // 60 seconds
       },
     })
   : new Sequelize(

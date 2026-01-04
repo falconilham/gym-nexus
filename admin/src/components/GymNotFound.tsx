@@ -9,7 +9,7 @@ export default function GymNotFound() {
 
   const handleGoHome = () => {
     // Redirect to the main portal
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gym-nexus-admin.vercel.app';
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'fitflow-admin.vercel.app';
     window.location.href = `http://${rootDomain}`;
   };
 

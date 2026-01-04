@@ -1,5 +1,5 @@
 {
-  "name": "@gym-nexus/backend",
+  "name": "@fitflow/backend",
   "version": "1.0.0",
   "description": "GymNexus Backend API",
   "main": "index.js",
