@@ -32,10 +32,10 @@
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
     "install:all": "npm install",
-    "install:backend": "npm install --workspace=backend",
-    "install:admin": "npm install --workspace=admin",
-    "install:client": "npm install --workspace=client",
-    "install:packages": "npm install --workspace=packages/*"
+    "install:backend": "cd backend && yarn install",
+    "install:admin": "cd admin && yarn install",
+    "install:client": "cd client && yarn install",
+    "install:packages": "yarn install"
   },
   "engines": {
     "node": ">=18.0.0",
