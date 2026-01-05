@@ -1,4 +1,4 @@
-name: Deploy Backend to Plesk
+name: Deploy Backend to BiznetGio VPS
 
 on:
   push:
@@ -11,83 +11,68 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Backend
+    name: Deploy Backend to VPS
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: npm ci --only=production
-
-      - name: Prepare deployment files
-        working-directory: ./backend
+      - name: Setup SSH Key
         run: |
-          # Create deployment directory
-          mkdir -p deploy
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-          # Copy application files
-          cp -r src deploy/
-          cp -r node_modules deploy/
-          cp package.json deploy/
-          cp package-lock.json deploy/ || true
-
-          # Copy environment template
-          if [ -f ".env.example" ]; then
-            cp .env.example deploy/
-          fi
-
-          # Create start script
-          cat > deploy/start.sh << 'EOF'
-          #!/bin/bash
-          export NODE_ENV=production
-          export PORT=${PORT:-5000}
-          node src/index.js
-          EOF
-          chmod +x deploy/start.sh
-
-          # Show deployment size
-          du -sh deploy
-
-      - name: Create .env file
-        working-directory: ./backend/deploy
+      - name: Deploy to VPS via rsync
         run: |
-          cat > .env << 'ENVEOF'
-          PORT=${{ secrets.BACKEND_PORT || 5000 }}
-          NODE_ENV=production
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
-          ENVEOF
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='uploads' \
+            -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+            ./backend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/fitflow-backend/
 
-      - name: Deploy to Plesk via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Install dependencies and restart application
+        uses: appleboy/ssh-action@v1.0.0
         with:
-          server: ${{ secrets.BACKEND_FTP_SERVER }}
-          username: ${{ secrets.BACKEND_FTP_USERNAME }}
-          password: ${{ secrets.BACKEND_FTP_PASSWORD }}
-          port: ${{ secrets.BACKEND_FTP_PORT || 21 }}
-          local-dir: ./backend/deploy/
-          server-dir: /httpdocs/
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**/.cache/**
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/fitflow-backend
+
+            # Create .env file
+            cat > .env << 'ENVEOF'
+            PORT=${{ secrets.BACKEND_PORT }}
+            NODE_ENV=production
+            DB_HOST=localhost
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+            ENVEOF
+
+            # Install dependencies
+            npm install --production
+
+            # Restart PM2 process
+            pm2 restart fitflow-backend || pm2 start index.js --name fitflow-backend
+            pm2 save
+
+            # Show status
+            pm2 status
+            pm2 logs fitflow-backend --lines 10 --nostream
 
       - name: Deployment Summary
         if: success()
         run: |
           echo "🎉 Backend deployment successful!"
-          echo "📦 Build size: $(du -sh backend/deploy | cut -f1)"
-          echo "🌐 API URL: https://api.fitflow.id"
+          echo "🌐 Server: ${{ secrets.VPS_HOST }}"
+          echo "📁 Directory: ~/fitflow-backend"
           echo "⏰ Deployed at: $(date)"
+          echo ""
+          echo "✅ Application restarted with PM2"

@@ -62,3 +62,16 @@ web-build/
 
 
 COMPLETE_DOCUMENTATION.md
+
+# Security - Never commit these files
+.github/secrets.txt
+.github/secrets.local
+.github/setup-secrets.sh
+.github/DEPLOYMENT.md
+.github/README.md
+*.pem
+*.key
+*_rsa
+*_rsa.pub
+id_*
+*.ppk
